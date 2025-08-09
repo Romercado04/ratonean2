@@ -49,6 +49,8 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.play.services.maps)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -56,4 +58,19 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    implementation("com.google.accompanist:accompanist-permissions:0.36.0")
+    implementation(libs.play.services.location)
+    // Google Maps Compose
+    implementation("com.google.maps.android:maps-compose:2.11.4")
+
+    // Koin Core
+    implementation("io.insert-koin:koin-core:3.5.6")
+
+// Koin para Android
+    implementation("io.insert-koin:koin-android:3.5.6")
+
+// Koin para ViewModel en Compose
+    implementation("io.insert-koin:koin-androidx-compose:3.5.6")
+
 }
