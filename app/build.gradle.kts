@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.jetbrainsKotlinSerialization)
+
 }
 
 android {
@@ -72,5 +74,13 @@ dependencies {
 
 // Koin para ViewModel en Compose
     implementation("io.insert-koin:koin-androidx-compose:3.5.6")
+
+    implementation(libs.gids.signin)
+    implementation(libs.gids.auth.api.phone)
+
+
+    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
 
 }

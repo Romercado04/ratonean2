@@ -10,6 +10,11 @@ activityCompose = "1.10.1"
 composeBom = "2024.09.00"
 playServicesLocation = "21.3.0"
 playServicesMaps = "19.2.0"
+ktor = "3.2.2"
+googlesignin = "21.2.0"
+pluginserialization = "2.0.21"
+gids = "1.0.0"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -29,8 +34,20 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 
+#ktor
+ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+gids-signin = { group = "com.google.android.gms", name = "play-services-auth", version = "21.2.0" }
+gids-auth-api-phone = { group = "com.google.android.gms", name = "play-services-auth-api-phone", version = "18.0.1" }
+identity-services = { group = "com.google.android.gms", name = "play-services-identity", version = "19.2.0" }
+
+
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+jetbrainsKotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "pluginserialization" }
 
