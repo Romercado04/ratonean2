@@ -4,6 +4,7 @@ import android.app.Application
 import com.example.ratonean2_app.auth.di.authModule
 import com.example.ratonean2_app.core.di.networkModule
 import com.example.ratonean2_app.map.di.locationModule
+import com.example.ratonean2_app.user.di.userModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.GlobalContext.startKoin
 
@@ -17,6 +18,8 @@ class Ratonean2App : Application() {
                     locationModule,
                     networkModule,
                     authModule,
+                    userModule,
+
                 )
             )
         }
