@@ -2,6 +2,7 @@ package com.example.ratonean2_app
 
 import android.app.Application
 import com.example.ratonean2_app.auth.di.authModule
+import com.example.ratonean2_app.branch.di.branchModule
 import com.example.ratonean2_app.commerce.di.commerceModule
 import com.example.ratonean2_app.core.di.networkModule
 import com.example.ratonean2_app.map.di.locationModule
@@ -23,6 +24,7 @@ class Ratonean2App : Application() {
                     userModule,
                     productModule,
                     commerceModule,
+                    branchModule,
 
                 )
             )

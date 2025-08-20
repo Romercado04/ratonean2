@@ -1,7 +1,7 @@
-package com.example.ratonean2_app.commerce.data.provider
+package com.example.ratonean2_app.branch.data.provider
 
-import com.example.ratonean2_app.commerce.domain.model.Commerce
-import com.example.ratonean2_app.commerce.domain.provider.CommerceProvider
+import com.example.ratonean2_app.branch.domain.model.Branch
+import com.example.ratonean2_app.branch.domain.provider.BranchProvider
 import com.example.ratonean2_app.core.network.ApiUrls
 import com.example.ratonean2_app.core.network.NetworkResponse
 import io.ktor.client.HttpClient
@@ -17,74 +17,44 @@ import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-class CommerceProviderImpl(private val client: HttpClient): CommerceProvider {
-    override fun getAllCommerces(): Flow<NetworkResponse<List<Commerce>>> = flow {
+class BranchProviderImpl(private val client: HttpClient) : BranchProvider {
+    override fun getAllBranches(): Flow<NetworkResponse<List<Branch>>> = flow {
+        emit(NetworkResponse.Loading())
         try {
-            emit(NetworkResponse.Loading())
-            val response = client.get(ApiUrls.COMMERCES)
+            val response = client.get(ApiUrls.BRANCHES)
             if (response.status.isSuccess()) {
-                val commerces = response.body<List<Commerce>>()
-                emit(NetworkResponse.Success(commerces))
-            }
-        }catch (e: Exception) {
-            emit(NetworkResponse.Failure(e.message ?: "Unknown error"))
-        }
-    }
-
-    override fun getCommerceById(id: String): Flow<NetworkResponse<Commerce>> = flow {
-        try {
-            emit(NetworkResponse.Loading())
-            val response = client.get(ApiUrls.COMMERCES_BY_ID.replace("{id}", id))
-            if (response.status.isSuccess()) {
-             val commerce = response.body<Commerce>()
-             emit(NetworkResponse.Success(commerce))
-            }else {
-                emit(NetworkResponse.Failure(response.status.description))
-            }
-        }catch (e: Exception) {
-            emit(NetworkResponse.Failure(e.message ?: "Unknown error"))
-        }
-    }
-
-    override fun createCommerce(commerce: Commerce): Flow<NetworkResponse<Unit>> = flow {
-        try {
-            emit(NetworkResponse.Loading())
-            val response = client.post(ApiUrls.COMMERCES) {
-                contentType(ContentType.Application.Json)
-                setBody(commerce)
-            }
-            if (response.status.isSuccess()) {
-                emit(NetworkResponse.Success(Unit))
-        }else {
-                emit(NetworkResponse.Failure(response.status.description))
-            }
-        }catch (e: Exception) {
-            emit(NetworkResponse.Failure(e.message ?: "Unknown error"))
-
-            }
-    }
-
-    override fun updateCommerce(commerce: Commerce): Flow<NetworkResponse<Unit>> = flow {
-        try {
-            emit(NetworkResponse.Loading())
-            val response = client.put(ApiUrls.COMMERCES_BY_ID.replace("{id}", commerce.id)) {
-                contentType(ContentType.Application.Json)
-                setBody(commerce)
-            }
-            if (response.status.isSuccess()) {
-                emit(NetworkResponse.Success(Unit))
+                val branches = response.body<List<Branch>>()
+                emit(NetworkResponse.Success(branches))
             } else {
                 emit(NetworkResponse.Failure(response.status.description))
             }
-        }catch (e: Exception) {
+        } catch (e: Exception) {
             emit(NetworkResponse.Failure(e.message ?: "Unknown error"))
         }
     }
 
-    override fun deleteCommerce(id: String): Flow<NetworkResponse<Unit>> = flow {
+    override fun getBranchById(id: String): Flow<NetworkResponse<Branch>> = flow {
         try {
             emit(NetworkResponse.Loading())
-            val response = client.delete(ApiUrls.COMMERCES_BY_ID.replace("{id}", id))
+            val response = client.get(ApiUrls.BRANCHES_BY_ID.replace("{id}", id))
+            if (response.status.isSuccess()) {
+                val branch = response.body<Branch>()
+                emit(NetworkResponse.Success(branch))
+            } else {
+                emit(NetworkResponse.Failure(response.status.description))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResponse.Failure(e.message ?: "Unknown error"))
+        }
+    }
+
+    override fun createBranch(branch: Branch): Flow<NetworkResponse<Unit>> = flow {
+        try {
+            emit(NetworkResponse.Loading())
+            val response = client.post(ApiUrls.BRANCHES) {
+                contentType(ContentType.Application.Json)
+                setBody(branch)
+            }
             if (response.status.isSuccess()) {
                 emit(NetworkResponse.Success(Unit))
             } else {
@@ -94,4 +64,36 @@ class CommerceProviderImpl(private val client: HttpClient): CommerceProvider {
             emit(NetworkResponse.Failure(e.message ?: "Unknown error"))
         }
     }
+
+    override fun updateBranch(branch: Branch): Flow<NetworkResponse<Unit>> = flow {
+        try {
+            emit(NetworkResponse.Loading())
+            val response = client.put(ApiUrls.BRANCHES.replace("{id}", branch.branchId)) {
+                contentType(ContentType.Application.Json)
+                setBody(branch)
+            }
+            if (response.status.isSuccess()) {
+                emit(NetworkResponse.Success(Unit))
+            } else {
+                emit(NetworkResponse.Failure(response.status.description))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResponse.Failure(e.message ?: "Unknown error"))
+        }
+    }
+
+    override fun deleteBranch(id: String): Flow<NetworkResponse<Unit>> = flow {
+        try {
+            emit(NetworkResponse.Loading())
+            val response = client.delete(ApiUrls.BRANCHES_BY_ID.replace("{id}", id))
+            if (response.status.isSuccess()) {
+                emit(NetworkResponse.Success(Unit))
+            } else {
+                emit(NetworkResponse.Failure(response.status.description))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResponse.Failure(e.message ?: "Unknown error"))
+        }
+    }
+
 }
