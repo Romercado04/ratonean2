@@ -39,6 +39,24 @@ android {
     buildFeatures {
         compose = true
     }
+
+    packaging {
+        resources {
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/LICENSE.txt"
+            excludes += "META-INF/NOTICE.md"
+            excludes += "META-INF/NOTICE.txt"
+            excludes += "META-INF/ASL2.0"
+            excludes += "META-INF/*.kotlin_module"
+            excludes += "META-INF/LICENSE-notice.md"
+            excludes += "META-INF/*.txt"
+            excludes += "META-INF/*.md"
+        }
+    }
+
+    tasks.withType<Test> {
+        useJUnitPlatform()
+    }
 }
 
 dependencies {
@@ -47,40 +65,31 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.play.services.maps)
 
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
+    // Using bundles to clean up redundant lines
+    implementation(libs.bundles.ktor.client)
+    implementation(libs.bundles.play.services)
+    implementation(libs.bundles.compose)
+    implementation(libs.bundles.compose.testing)
+    implementation(libs.bundles.test.libraries)
+    testImplementation(libs.bundles.junit5)
+
+    // Core testing dependencies (these are in the `testing` bundle)
+
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 
+
+    // Bundles for testing Ktor
+    testImplementation(libs.bundles.ktor.testing)
+
+    // Other dependencies
     implementation("com.google.accompanist:accompanist-permissions:0.36.0")
-    implementation(libs.play.services.location)
-    // Google Maps Compose
     implementation("com.google.maps.android:maps-compose:2.11.4")
-
-    // Koin Core
     implementation("io.insert-koin:koin-core:3.5.6")
-
-// Koin para Android
     implementation("io.insert-koin:koin-android:3.5.6")
-
-// Koin para ViewModel en Compose
     implementation("io.insert-koin:koin-androidx-compose:3.5.6")
-
     implementation(libs.gids.signin)
     implementation(libs.gids.auth.api.phone)
-
-
-    implementation(libs.ktor.client.android)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.serialization.kotlinx.json)
-
+    testImplementation(kotlin("test"))
 }

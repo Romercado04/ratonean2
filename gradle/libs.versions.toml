@@ -4,6 +4,7 @@ kotlin = "2.0.21"
 coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
+junit-jupiter = "5.10.2"
 espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.9.2"
 activityCompose = "1.10.1"
@@ -15,6 +16,8 @@ googlesignin = "21.2.0"
 pluginserialization = "2.0.21"
 gids = "1.0.0"
 
+coroutines = "1.8.0"
+mockk = "1.13.10"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,19 +38,42 @@ play-services-location = { group = "com.google.android.gms", name = "play-servic
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 
 #ktor
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+# Ktor testing dependencies
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+
+# Coroutines testing dependencies
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+
+# Mocking library
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 
 gids-signin = { group = "com.google.android.gms", name = "play-services-auth", version = "21.2.0" }
 gids-auth-api-phone = { group = "com.google.android.gms", name = "play-services-auth-api-phone", version = "18.0.1" }
 identity-services = { group = "com.google.android.gms", name = "play-services-identity", version = "19.2.0" }
 
+junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junit-jupiter" }
+junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junit-jupiter" }
+junit-jupiter-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junit-jupiter" }
+junit-platform-runner = { group = "org.junit.platform", name = "junit-platform-runner", version = "1.10.2" }
 
+
+[bundles]
+ktor-client = ["ktor-client-core", "ktor-client-android", "ktor-client-content-negotiation", "ktor-serialization-kotlinx-json"]
+ktor-testing = ["ktor-client-mock", "ktor-client-cio"]
+compose = ["androidx-ui", "androidx-ui-graphics", "androidx-ui-tooling-preview", "androidx-material3"]
+compose-testing = ["androidx-ui-test-junit4", "androidx-ui-tooling", "androidx-ui-test-manifest"]
+play-services = ["play-services-location", "play-services-maps"]
+junit5 = ["junit-jupiter-api", "junit-jupiter-engine", "junit-jupiter-params"]
+test-libraries = ["mockk", "kotlinx-coroutines-test"]
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 jetbrainsKotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "pluginserialization" }
-

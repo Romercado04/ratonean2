@@ -68,7 +68,7 @@ class BranchProviderImpl(private val client: HttpClient) : BranchProvider {
     override fun updateBranch(branch: Branch): Flow<NetworkResponse<Unit>> = flow {
         try {
             emit(NetworkResponse.Loading())
-            val response = client.put(ApiUrls.BRANCHES.replace("{id}", branch.branchId)) {
+            val response = client.put(ApiUrls.BRANCHES_BY_ID.replace("{id}", branch.branchId)) {
                 contentType(ContentType.Application.Json)
                 setBody(branch)
             }

@@ -1,5 +1,7 @@
 package com.example.ratonean2_app.branch.domain.model
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Branch(
     val branchId: String,
     val commerceId: String,
@@ -10,18 +12,18 @@ data class Branch(
     val number: String,
     val latitude: Double,
     val longitude: Double,
-    val observations: String,
+    val observations: String?,
     val neighborhood: String,
     val postalCode: String,
     val location: String,
     val province: String,
-    val mondaySchedule: String,
-    val tuesdaySchedule: String,
-    val wednesdaySchedule: String,
-    val thursdaySchedule: String,
-    val fridaySchedule: String,
-    val saturdaySchedule: String,
-    val sundaySchedule: String
+    val mondaySchedule: String?,
+    val tuesdaySchedule: String?,
+    val wednesdaySchedule: String?,
+    val thursdaySchedule: String?,
+    val fridaySchedule: String?,
+    val saturdaySchedule: String?,
+    val sundaySchedule: String?
 )
 //[
 //  {

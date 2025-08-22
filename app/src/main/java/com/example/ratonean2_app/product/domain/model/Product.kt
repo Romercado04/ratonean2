@@ -1,5 +1,8 @@
 package com.example.ratonean2_app.product.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Product(
     val commerceId: String,
     val flagId: String,
@@ -7,17 +10,17 @@ data class Product(
     val productId: String,
     val ean: String,
     val description: String,
-    val presentationQuantity: Int,
+    val presentationQuantity: Double,
     val presentationUnit: String,
     val brand: String,
     val listPrice: Double,
     val referencePrice: Double,
-    val referenceQuantity: Int,
+    val referenceQuantity: Double,
     val referenceUnit: String,
-    val promoPrice1: Double,
-    val promoLegend1: String,
-    val promoPrice2: Double,
-    val promoLegend2: String
+    val promoPrice1: Double?,
+    val promoLegend1: String?,
+    val promoPrice2: Double?,
+    val promoLegend2: String?
 )
 
 //{

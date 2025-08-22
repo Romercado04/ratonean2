@@ -1,5 +1,8 @@
 package com.example.ratonean2_app.commerce.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Commerce(
     val id: String,
     val flagId: String,
