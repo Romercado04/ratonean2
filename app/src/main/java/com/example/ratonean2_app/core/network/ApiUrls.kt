@@ -14,6 +14,7 @@ object ApiUrls {
 
     const val BRANCHES = "${BASE_URL}/branch"
     const val BRANCHES_BY_ID = "${BASE_URL}/branch/{id}"
+    const val BRANCHES_NEARBY = "${BASE_URL}/branch/nearby"
 
     const val PRODUCTS = "${BASE_URL}/product"
     const val PRODUCTS_BY_ID = "${BASE_URL}/product/{id}"

@@ -8,6 +8,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -40,6 +41,29 @@ class BranchProviderImpl(private val client: HttpClient) : BranchProvider {
             if (response.status.isSuccess()) {
                 val branch = response.body<Branch>()
                 emit(NetworkResponse.Success(branch))
+            } else {
+                emit(NetworkResponse.Failure(response.status.description))
+            }
+        } catch (e: Exception) {
+            emit(NetworkResponse.Failure(e.message ?: "Unknown error"))
+        }
+    }
+
+    override fun getNearbyBraches(
+        latitude: Double,
+        longitude: Double,
+        distance: Double
+    ): Flow<NetworkResponse<List<Branch>>> = flow {
+        try {
+            emit(NetworkResponse.Loading())
+            val response = client.get(ApiUrls.BRANCHES_NEARBY) {
+                parameter("latitude", latitude)
+                parameter("longitude", longitude)
+                parameter("distance", distance)
+            }
+            if (response.status.isSuccess()) {
+                val branches = response.body<List<Branch>>()
+                emit(NetworkResponse.Success(branches))
             } else {
                 emit(NetworkResponse.Failure(response.status.description))
             }
