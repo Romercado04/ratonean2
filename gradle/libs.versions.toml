@@ -15,6 +15,8 @@ ktor = "3.2.2"
 googlesignin = "21.2.0"
 pluginserialization = "2.0.21"
 gids = "1.0.0"
+navigation = "2.9.3"
+
 
 coroutines = "1.8.0"
 mockk = "1.13.10"
@@ -62,6 +64,7 @@ junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engi
 junit-jupiter-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junit-jupiter" }
 junit-platform-runner = { group = "org.junit.platform", name = "junit-platform-runner", version = "1.10.2" }
 
+navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
 
 [bundles]
 ktor-client = ["ktor-client-core", "ktor-client-android", "ktor-client-content-negotiation", "ktor-serialization-kotlinx-json"]

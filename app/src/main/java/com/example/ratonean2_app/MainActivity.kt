@@ -15,6 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.ratonean2_app.auth.presentation.screen.LoginScreen
 import com.example.ratonean2_app.auth.presentation.screen.RegisterScreen
 import com.example.ratonean2_app.map.presentation.view.MapScreen
+import com.example.ratonean2_app.navigation.presentation.view.MainScreen
 import com.example.ratonean2_app.ui.theme.Ratonean2appTheme
 
 class MainActivity : ComponentActivity() {
@@ -25,7 +26,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             Ratonean2appTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) {
-                    LoginScreen()
+                    MainScreen()
                 }
             }
         }

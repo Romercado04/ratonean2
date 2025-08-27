@@ -79,7 +79,6 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
 
-
     // Bundles for testing Ktor
     testImplementation(libs.bundles.ktor.testing)
 
@@ -91,5 +90,6 @@ dependencies {
     implementation("io.insert-koin:koin-androidx-compose:3.5.6")
     implementation(libs.gids.signin)
     implementation(libs.gids.auth.api.phone)
+    implementation(libs.navigation.compose)
     testImplementation(kotlin("test"))
 }
