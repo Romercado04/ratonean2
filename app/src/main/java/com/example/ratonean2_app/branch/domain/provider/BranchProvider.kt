@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 interface BranchProvider {
     fun getAllBranches(): Flow<NetworkResponse<List<Branch>>>
     fun getBranchById(id: String): Flow<NetworkResponse<Branch>>
-    fun getNearbyBraches(latitude: Double, longitude: Double, distance: Double): Flow<NetworkResponse<List<Branch>>>
+    fun getNearbyBranches(latitude: Double, longitude: Double, distance: Double): Flow<NetworkResponse<List<Branch>>>
     fun createBranch(branch: Branch): Flow<NetworkResponse<Unit>>
     fun updateBranch(branch: Branch): Flow<NetworkResponse<Unit>>
     fun deleteBranch(id: String): Flow<NetworkResponse<Unit>>

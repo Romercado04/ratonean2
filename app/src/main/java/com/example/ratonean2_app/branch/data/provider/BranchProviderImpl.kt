@@ -49,7 +49,7 @@ class BranchProviderImpl(private val client: HttpClient) : BranchProvider {
         }
     }
 
-    override fun getNearbyBraches(
+    override fun getNearbyBranches(
         latitude: Double,
         longitude: Double,
         distance: Double
