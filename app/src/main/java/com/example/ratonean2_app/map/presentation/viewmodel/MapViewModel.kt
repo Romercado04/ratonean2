@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ratonean2_app.branch.domain.model.Branch
 import com.example.ratonean2_app.branch.domain.usecase.GetNearbyBranchesUseCase
+import com.example.ratonean2_app.core.network.NetworkResponse
 import com.example.ratonean2_app.map.domain.model.LocationModel
 import com.example.ratonean2_app.map.domain.usercase.GetUserLocationUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,12 +16,11 @@ sealed class MapUiState {
     object Loading : MapUiState()
     data class Success(
         val location: LocationModel,
-        val branches: List<Branch>
+        val branches: List<Branch> = emptyList()
     ) : MapUiState()
     data class Error(val message: String) : MapUiState()
     object LocationUnavailable : MapUiState()
 }
-
 
 
 class MapViewModel(
@@ -46,13 +46,19 @@ class MapViewModel(
                     return@launch
                 }
 
-                val branches = getNearbyBranchesUseCase(
+                getNearbyBranchesUseCase(
                     latitude = location.latitude,
                     longitude = location.longitude,
                     distance = distance
-                )
-
-                _uiState.value = MapUiState.Success(location, branches as List<Branch>)
+                ).collect { response ->
+                    when (response) {
+                        is NetworkResponse.Loading -> _uiState.value = MapUiState.Loading
+                        is NetworkResponse.Success -> _uiState.value =
+                            MapUiState.Success(location, response.data ?: emptyList())
+                        is NetworkResponse.Failure -> _uiState.value =
+                            MapUiState.Error(response.error ?: "Error al obtener sucursales")
+                    }
+                }
 
             } catch (e: Exception) {
                 _uiState.value = MapUiState.Error(

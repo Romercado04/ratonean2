@@ -57,9 +57,9 @@ class BranchProviderImpl(private val client: HttpClient) : BranchProvider {
         try {
             emit(NetworkResponse.Loading())
             val response = client.get(ApiUrls.BRANCHES_NEARBY) {
-                parameter("latitude", latitude)
-                parameter("longitude", longitude)
-                parameter("distance", distance)
+                parameter("lat", latitude)
+                parameter("lon", longitude)
+                parameter("radius", distance)
             }
             if (response.status.isSuccess()) {
                 val branches = response.body<List<Branch>>()
