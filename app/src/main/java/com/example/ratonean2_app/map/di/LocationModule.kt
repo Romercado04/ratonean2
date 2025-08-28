@@ -10,5 +10,5 @@ import org.koin.dsl.module
 val locationModule = module {
     single<LocationProvider> { FusedLocationProviderImpl(get()) }
     factory { GetUserLocationUseCase(get()) }
-    viewModel { MapViewModel(get()) }
+    viewModel { MapViewModel(get(), get()) }
 }
