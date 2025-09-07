@@ -66,6 +66,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
 
+    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("io.coil-kt:coil-gif:2.6.0")
+
     // Using bundles to clean up redundant lines
     implementation(libs.bundles.ktor.client)
     implementation(libs.bundles.play.services)
