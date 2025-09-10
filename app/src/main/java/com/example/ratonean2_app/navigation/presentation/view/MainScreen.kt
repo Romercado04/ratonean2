@@ -35,7 +35,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.ratonean2_app.core.network.NetworkResponse
 import com.example.ratonean2_app.map.presentation.view.MapScreen
+import com.example.ratonean2_app.map.presentation.viewmodel.MapUiState
 import com.example.ratonean2_app.map.presentation.viewmodel.MapViewModel
+import com.example.ratonean2_app.map.presentation.viewmodel.SearchUiState
 import com.example.ratonean2_app.navigation.presentation.components.DrawerContent
 import com.example.ratonean2_app.places.domain.model.PlaceResult
 import com.example.ratonean2_app.places.presentation.viewmodel.SearchViewModel
@@ -45,15 +47,16 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    searchViewModel: SearchViewModel = koinViewModel(),
     mapViewModel: MapViewModel = koinViewModel()
-    ) {
+) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var active by remember { mutableStateOf(false) }
-    val placesState by searchViewModel.places.collectAsState()
+
+    val searchState by mapViewModel.searchState.collectAsState()
+    val currentLocation by mapViewModel.uiState.collectAsState()
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -76,9 +79,13 @@ fun MainScreen(
         ) {
             SearchBar(
                 query = query,
-                onQueryChange = { query = it
-                    searchViewModel.searchPlaces(it) },
-                onSearch = { active = false },
+                onQueryChange = {
+                    query = it
+                    mapViewModel.search(it)
+                                },
+                onSearch = { active = false
+                    mapViewModel.search(it)
+                           },
                 active = active,
                 onActiveChange = { active = it },
                 placeholder = { Text("Buscar...") },
@@ -95,31 +102,59 @@ fun MainScreen(
                 tonalElevation = 6.dp
             ) {
                 if (active) {
-                    when (placesState) {
-                        is NetworkResponse.Success -> {
-                            val places = (placesState as NetworkResponse.Success<List<PlaceResult>>).data.orEmpty()
+                    when (searchState) {
+                        is SearchUiState.Loading -> Text("Buscando...")
+                        is SearchUiState.Empty -> Text("Vacio")
+                        is SearchUiState.Error -> Text("Error buscando")
+                        is SearchUiState.Results -> {
+                            val results = searchState as SearchUiState.Results
                             LazyColumn {
-                                items(places) { place ->
-                                    Text(
-                                        text = place.displayName,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp)
-                                            .clickable {
-                                                println("clicked ${place.displayName}, lat: ${place.lat} - string, lon: ${place.lon} - string; lat: ${place.lat.toDouble()} - string, lon: ${place.lon.toDouble()} - string;")
-                                                mapViewModel.updateLocation(place.lat.toDouble(), place.lon.toDouble())
-                                                active = false
-                                            }
-                                    )
+
+                                if (results.places.isNotEmpty()) {
+                                    items(results.places) { place ->
+                                        Text(
+                                            text = place.displayName,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                                .clickable {
+                                                    mapViewModel.updateLocation(
+                                                        place.lat.toDouble(),
+                                                        place.lon.toDouble()
+                                                    )
+                                                    active = false
+                                                }
+                                        )
+                                    }
+                                }
+
+                                // Muestra sucursales si la lista no está vacía
+                                if (results.branches.isNotEmpty()) {
+                                    items(results.branches) { branch ->
+                                        Text(
+                                            text = "🏬 ${branch.name}",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                        )
+                                    }
+                                }
+
+                                // Muestra productos si la lista no está vacía
+                                if (results.products.isNotEmpty()) {
+                                    items(results.products) { product ->
+                                        Text(
+                                            text = "🛒 ${product.description}",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
-                        is NetworkResponse.Loading -> {
-                            Text("Buscando...")
-                        }
-                        is NetworkResponse.Failure -> {
-                            Text("Error buscando lugares")
-                        }
+
+                        else -> {}
                     }
                 }
             }

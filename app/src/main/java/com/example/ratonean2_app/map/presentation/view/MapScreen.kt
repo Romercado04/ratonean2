@@ -38,11 +38,7 @@ fun MapScreen(viewModel: MapViewModel) {
     when (uiState) {
         is MapUiState.Loading -> Text("Cargando mapa...")
         is MapUiState.LocationUnavailable ->
-            GoogleMapView(
-                lat = -34.6037,
-                lon = -58.3816,
-                branches = emptyList()
-            )
+            Text("No se pudo obtener la ubicación.")
         is MapUiState.Error -> Text("Error: ${(uiState as MapUiState.Error).message}")
         is MapUiState.Success -> {
             val data = uiState as MapUiState.Success

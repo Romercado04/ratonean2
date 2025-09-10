@@ -1,5 +1,6 @@
 package com.example.ratonean2_app.map.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ratonean2_app.branch.domain.model.Branch
@@ -7,9 +8,15 @@ import com.example.ratonean2_app.branch.domain.usecase.GetNearbyBranchesUseCase
 import com.example.ratonean2_app.core.network.NetworkResponse
 import com.example.ratonean2_app.map.domain.model.LocationModel
 import com.example.ratonean2_app.map.domain.usercase.GetUserLocationUseCase
+import com.example.ratonean2_app.places.domain.model.PlaceResult
+import com.example.ratonean2_app.places.domain.usecase.GetPlacesUseCase
 import com.example.ratonean2_app.product.domain.model.Product
+import com.example.ratonean2_app.product.domain.usecase.GetProductsBySearchInBranches
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.collections.emptyList
@@ -30,7 +37,8 @@ sealed class SearchUiState {
     data class Results(
         val location: LocationModel,
         val branches: List<Branch> = emptyList(),
-        val products: List<Product> = emptyList()
+        val products: List<Product> = emptyList(),
+        val places: List<PlaceResult> = emptyList()
     ) : SearchUiState()
     object Empty : SearchUiState()
     data class Error(val message: String) : SearchUiState()
@@ -39,14 +47,21 @@ sealed class SearchUiState {
 
 class MapViewModel(
     private val getUserLocationUseCase: GetUserLocationUseCase,
-    private val getNearbyBranchesUseCase: GetNearbyBranchesUseCase
+    private val getNearbyBranchesUseCase: GetNearbyBranchesUseCase,
+    private val getProductsBySearchInBranches: GetProductsBySearchInBranches,
+    private val getPlacesUseCase: GetPlacesUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<MapUiState>(MapUiState.Loading)
     val uiState: StateFlow<MapUiState> = _uiState
 
     private val _searchState = MutableStateFlow<SearchUiState>(SearchUiState.Idle)
     val searchState: StateFlow<SearchUiState> = _searchState
-    private var manualLocation: LocationModel? = null
+
+    private var cachedBranches: List<Branch> = emptyList()
+    private var currentLocation: LocationModel? = null
+
+    private var searchJob: Job? = null
+
 
     fun loadLocationAndBranches(distance: Double = 5.0) {
         viewModelScope.launch {
@@ -57,7 +72,7 @@ class MapViewModel(
                 if (location == null) {
                     _uiState.value = MapUiState.LocationUnavailable
                     return@launch
-                }
+                } else currentLocation = location
 
                 getNearbyBranchesUseCase(
                     latitude = location.latitude,
@@ -68,6 +83,11 @@ class MapViewModel(
                         is NetworkResponse.Loading -> _uiState.value = MapUiState.Loading
                         is NetworkResponse.Success -> { _uiState.value =
                                 MapUiState.Success(location, response.data ?: emptyList())
+                                cachedBranches = response.data.orEmpty()
+                            Log.d("MapViewModel", "Branches cargadas: ${cachedBranches.size} sucursales")
+                            cachedBranches.forEach { branch ->
+                                Log.d("MapViewModel", "Sucursal: ${branch.name}, ID: ${branch.branchId}")
+                            }
                         }
                         is NetworkResponse.Failure -> _uiState.value = MapUiState.Success(location, emptyList())
                     }
@@ -81,23 +101,29 @@ class MapViewModel(
         }
     }
 
-    fun updateLocation(lat: Double, lon: Double) {
-        val newLocation = LocationModel(lat, lon)
-        manualLocation = newLocation
-        _uiState.value = MapUiState.Success(newLocation, emptyList())
+    fun updateLocation(lat: Double, lon: Double, distance: Double = 5.0){
+        viewModelScope.launch {
+            val newLocation = LocationModel(lat, lon)
+            currentLocation = newLocation
+            _uiState.value = MapUiState.Success(newLocation, emptyList())
+
+            val response = getNearbyBranchesUseCase(
+                latitude = newLocation.latitude,
+                longitude = newLocation.longitude,
+                distance = distance
+            ).first()
+
+            cachedBranches = if(response is NetworkResponse.Success) response.data.orEmpty() else emptyList()
+            _uiState.value = MapUiState.Success(newLocation, cachedBranches)
+        }
     }
 
     fun search(query: String) {
-        viewModelScope.launch {
-            val currentUiState = _uiState.value
-            if (currentUiState !is MapUiState.Success) {
-                _searchState.value = SearchUiState.Error("Ubicación no disponible")
-                return@launch
-            }
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(500) // Debounce para evitar llamadas excesivas
 
-            val location = currentUiState.location
-            val allBranches = currentUiState.branches
-
+            val location = currentLocation
             if (query.isBlank()) {
                 _searchState.value = SearchUiState.Idle
                 return@launch
@@ -105,40 +131,46 @@ class MapViewModel(
 
             _searchState.value = SearchUiState.Loading
 
-            // Filtramos branches locales
-            val matchedBranches = allBranches.filter { branch ->
-                branch.name.contains(query, ignoreCase = true) ||
-                        branch.location.contains(query, ignoreCase = true)
-            }
+            try {
+                var filteredBranches: List<Branch> = emptyList()
+                var products: List<Product> = emptyList()
+                var places: List<PlaceResult> = emptyList()
 
-            val matchedProducts = if (matchedBranches.isEmpty() && allBranches.isNotEmpty()) {
-                val branchIds = allBranches.map { it.branchId }
-                getProductsBySearchInBranches(branchIds, query) // adaptalo a tu usecase de productos
-            } else emptyList()
+                if (location != null) {
+                    filteredBranches = cachedBranches.filter { branch ->
+                        val branchWords = branch.name.lowercase().split(" ")
+                        val queryWords = query.lowercase().split(" ")
+                        queryWords.any { q -> branchWords.any { it.contains(q) } }
+                    }
 
-            _searchState.value = if (matchedBranches.isEmpty() && matchedProducts.isEmpty()) {
-                SearchUiState.Empty
-            } else {
-                SearchUiState.Results(
-                    location = location,
-                    branches = matchedBranches,
-                    products = matchedProducts
-                )
+                    val branchIdsForProducts = cachedBranches.map { it.branchId }
+                    Log.d("MapViewModel", "Branchesids 4 products: ${branchIdsForProducts.size} sucursales")
+                    branchIdsForProducts.forEach { branch ->
+                        Log.d("MapViewModel BranchIdForProducts", "Sucursal: $branch")
+                    }
+
+                    if (branchIdsForProducts.isNotEmpty()) {
+                        getProductsBySearchInBranches(branchIdsForProducts, query).collect {
+                            response ->
+                            products = response.data.orEmpty()
+                        }
+                    }
+                } else {
+                    val placesResponse = getPlacesUseCase(query).first()
+                    if (placesResponse is NetworkResponse.Success) {
+                        places = placesResponse.data.orEmpty()
+                    }
+                }
+                    _searchState.value = SearchUiState.Results(
+                        location = location ?: LocationModel(0.0, 0.0),
+                        branches = filteredBranches,
+                        products = products,
+                        places = places
+                    )
+
+            } catch (e: Exception) {
+                _searchState.value = SearchUiState.Error(e.message ?: "Error buscando")
             }
         }
     }
-
-    // -----------------------------
-    // Reset manual location si vuelve GPS activo
-    // -----------------------------
-    fun resetManualLocationIfGpsAvailable() {
-        viewModelScope.launch {
-            val location = getUserLocationUseCase()
-            if (location != null) {
-                manualLocation = null
-                _uiState.value = MapUiState.Success(location, emptyList())
-            }
-        }
-    }
-
 }
