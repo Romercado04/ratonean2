@@ -19,4 +19,5 @@ object ApiUrls {
     const val PRODUCTS = "${BASE_URL}/product"
     const val PRODUCTS_BY_ID = "${BASE_URL}/product/{id}"
 
+    const val PLACES_URL = "https://nominatim.openstreetmap.org/search"
 }

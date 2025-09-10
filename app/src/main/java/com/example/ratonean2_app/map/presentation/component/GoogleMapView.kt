@@ -3,6 +3,7 @@ package com.example.ratonean2_app.map.presentation.component
 import android.graphics.BitmapFactory
 import com.example.ratonean2_app.R
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
@@ -15,6 +16,7 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import androidx.core.graphics.scale
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
 
 @Composable
@@ -26,8 +28,11 @@ fun GoogleMapView(
     val context = LocalContext.current
     val userPosition = LatLng(lat, lon)
 
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(userPosition, 15f)
+    val cameraPositionState = rememberCameraPositionState()
+
+    LaunchedEffect(lat, lon) {
+        val update = CameraUpdateFactory.newLatLngZoom(userPosition, 15f)
+        cameraPositionState.animate(update)
     }
 
     // Cargar y escalar icono personalizado

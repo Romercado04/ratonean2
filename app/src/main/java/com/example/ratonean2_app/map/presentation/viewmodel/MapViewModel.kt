@@ -9,6 +9,7 @@ import com.example.ratonean2_app.map.domain.model.LocationModel
 import com.example.ratonean2_app.map.domain.usercase.GetUserLocationUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.collections.emptyList
 
@@ -53,8 +54,10 @@ class MapViewModel(
                 ).collect { response ->
                     when (response) {
                         is NetworkResponse.Loading -> _uiState.value = MapUiState.Loading
-                        is NetworkResponse.Success -> _uiState.value =
-                            MapUiState.Success(location, response.data ?: emptyList())
+                        is NetworkResponse.Success -> {
+                            _uiState.value =
+                                MapUiState.Success(location, response.data ?: emptyList())
+                        }
                         is NetworkResponse.Failure -> _uiState.value =
                             MapUiState.Error(response.error ?: "Error al obtener sucursales")
                     }
@@ -67,4 +70,32 @@ class MapViewModel(
             }
         }
     }
+
+    fun updateLocation(lat: Double, lon: Double, distance: Double = 5.0){
+        viewModelScope.launch {
+            val newLocation = LocationModel(lat, lon)
+
+            _uiState.value = MapUiState.Loading
+
+            getNearbyBranchesUseCase(
+                latitude = newLocation.latitude,
+                longitude = newLocation.longitude,
+                distance = 5.0
+            ).collect { response ->
+                when (response) {
+                    is NetworkResponse.Loading -> {}
+                    is NetworkResponse.Success -> {
+                        // Emite un nuevo estado de éxito con la nueva ubicación y sucursales.
+                        // Esto garantiza que el StateFlow siempre emita un nuevo valor.
+                        _uiState.value = MapUiState.Success(newLocation, response.data ?: emptyList())
+                    }
+                    is NetworkResponse.Failure -> {
+                        // Si falla, aún así actualiza la ubicación en el mapa, pero con una lista vacía de sucursales.
+                        _uiState.value = MapUiState.Success(newLocation, emptyList())
+                    }
+                }
+            }
+        }
+    }
+
 }

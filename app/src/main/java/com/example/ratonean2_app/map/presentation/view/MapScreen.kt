@@ -15,7 +15,7 @@ import com.google.accompanist.permissions.shouldShowRationale
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun MapScreen(viewModel: MapViewModel = koinViewModel()) {
+fun MapScreen(viewModel: MapViewModel) {
     val uiState by viewModel.uiState.collectAsState()
 
     when (uiState) {
