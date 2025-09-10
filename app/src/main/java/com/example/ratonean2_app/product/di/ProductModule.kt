@@ -6,6 +6,9 @@ import com.example.ratonean2_app.product.domain.usecase.CreateNewProductUseCase
 import com.example.ratonean2_app.product.domain.usecase.DeleteProductUseCase
 import com.example.ratonean2_app.product.domain.usecase.GetAllProductsUseCase
 import com.example.ratonean2_app.product.domain.usecase.GetProductByIdUseCase
+import com.example.ratonean2_app.product.domain.usecase.GetProductsByBranchUseCase
+import com.example.ratonean2_app.product.domain.usecase.GetProductsBySearchInBranches
+import com.example.ratonean2_app.product.domain.usecase.GetProductsWithPromosUseCase
 import com.example.ratonean2_app.product.domain.usecase.UpdateProductUseCase
 import org.koin.dsl.module
 
@@ -16,4 +19,7 @@ val productModule = module {
     factory { GetProductByIdUseCase(get()) }
     factory { UpdateProductUseCase(get()) }
     factory { DeleteProductUseCase(get()) }
+    factory { GetProductsByBranchUseCase(get()) }
+    factory { GetProductsWithPromosUseCase(get()) }
+    factory { GetProductsBySearchInBranches(get()) }
 }

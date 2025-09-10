@@ -14,13 +14,35 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MapScreen(viewModel: MapViewModel) {
     val uiState by viewModel.uiState.collectAsState()
 
+    val locationPermissionState = rememberPermissionState(
+        android.Manifest.permission.ACCESS_FINE_LOCATION
+    )
+
+    LaunchedEffect(key1 = Unit) {
+        if (!locationPermissionState.status.isGranted) {
+            locationPermissionState.launchPermissionRequest()
+        }
+    }
+
+    LaunchedEffect(locationPermissionState.status.isGranted) {
+        if (locationPermissionState.status.isGranted) {
+            viewModel.loadLocationAndBranches()
+        }
+    }
+
     when (uiState) {
         is MapUiState.Loading -> Text("Cargando mapa...")
-        is MapUiState.LocationUnavailable -> Text("No pudimos obtener tu ubicación")
+        is MapUiState.LocationUnavailable ->
+            GoogleMapView(
+                lat = -34.6037,
+                lon = -58.3816,
+                branches = emptyList()
+            )
         is MapUiState.Error -> Text("Error: ${(uiState as MapUiState.Error).message}")
         is MapUiState.Success -> {
             val data = uiState as MapUiState.Success

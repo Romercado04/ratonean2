@@ -1,7 +1,9 @@
 package com.example.ratonean2_app.product.data.provider
 
+import android.util.Log.e
 import com.example.ratonean2_app.core.network.ApiUrls
 import com.example.ratonean2_app.core.network.NetworkResponse
+import com.example.ratonean2_app.product.domain.helper.appendParams
 import com.example.ratonean2_app.product.domain.model.Product
 import com.example.ratonean2_app.product.domain.provider.ProductProvider
 import io.ktor.client.HttpClient
@@ -93,6 +95,39 @@ class ProductProviderImpl(private val client: HttpClient) : ProductProvider {
             }
         }catch (e: Exception){
             emit(NetworkResponse.Failure(e.message ?: "Unknown error"))
+        }
+    }
+
+    override fun getProductsByBranch(branchId: String): Flow<NetworkResponse<List<Product>>> = flow {
+        emit(NetworkResponse.Loading())
+        try {
+            val products: List<Product> = client.get(ApiUrls.PRODUCTS_BY_BRANCH.replace("{branchId}", branchId)).body()
+            emit(NetworkResponse.Success(products))
+        } catch (e: Exception) {
+            emit(NetworkResponse.Failure(e.message))
+        }
+    }
+
+    override fun getProductsWithPromos(branchId: String, brand: String?): Flow<NetworkResponse<List<Product>>> = flow {
+        emit(NetworkResponse.Loading())
+        try {
+            val url = ApiUrls.PRODUCTS_PROMOS.appendParams(mapOf("branchId" to branchId, "brand" to brand))
+            val products: List<Product> = client.get(url).body()
+            emit(NetworkResponse.Success(products))
+        } catch (e: Exception) {
+            emit(NetworkResponse.Failure(e.message))
+        }
+    }
+
+    override fun getProductsBySearchInBranches(branchIds: List<String>, query: String): Flow<NetworkResponse<List<Product>>> = flow {
+        emit(NetworkResponse.Loading())
+        try {
+            val idsParam = branchIds.joinToString(",")
+            val url = ApiUrls.PRODUCTS_BY_SEARCH_IN_BRANCHES.appendParams(mapOf("branchIds" to idsParam, "q" to query))
+            val products: List<Product> = client.get(url).body()
+            emit(NetworkResponse.Success(products))
+        } catch (e: Exception) {
+            emit(NetworkResponse.Failure(e.message))
         }
     }
 }
