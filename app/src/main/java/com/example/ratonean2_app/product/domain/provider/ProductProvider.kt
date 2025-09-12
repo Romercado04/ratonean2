@@ -13,4 +13,5 @@ interface ProductProvider {
     fun getProductsByBranch(branchId: String): Flow<NetworkResponse<List<Product>>>
     fun getProductsWithPromos(branchId: String, brand: String? = null): Flow<NetworkResponse<List<Product>>>
     fun getProductsBySearchInBranches(branchIds: List<String>, query: String): Flow<NetworkResponse<List<Product>>>
+    fun getPopularProducts(branchId: List<String>, limit: Int? = null): Flow<NetworkResponse<List<Product>>>
 }
