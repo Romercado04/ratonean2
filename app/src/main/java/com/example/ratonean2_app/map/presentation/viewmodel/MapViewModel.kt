@@ -1,13 +1,21 @@
 package com.example.ratonean2_app.map.presentation.viewmodel
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.util.Log
+import android.util.Log.e
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ratonean2_app.branch.domain.model.Branch
 import com.example.ratonean2_app.branch.domain.usecase.GetNearbyBranchesUseCase
 import com.example.ratonean2_app.core.network.NetworkResponse
 import com.example.ratonean2_app.map.domain.model.LocationModel
+import com.example.ratonean2_app.map.domain.model.LocationResult
 import com.example.ratonean2_app.map.domain.usercase.GetUserLocationUseCase
+import com.example.ratonean2_app.map.presentation.state.MapUiState
+import com.example.ratonean2_app.map.presentation.state.SearchUiState
 import com.example.ratonean2_app.places.domain.model.PlaceResult
 import com.example.ratonean2_app.places.domain.usecase.GetPlacesUseCase
 import com.example.ratonean2_app.product.domain.model.Product
@@ -18,35 +26,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.collections.emptyList
-
-sealed class MapUiState {
-    object Loading : MapUiState()
-    data class Success(
-        val location: LocationModel,
-        val branches: List<Branch> = emptyList()
-    ) : MapUiState()
-    data class Error(val message: String) : MapUiState()
-    object LocationUnavailable : MapUiState()
-}
-
-sealed class SearchUiState {
-    object Idle : SearchUiState()
-    object Loading : SearchUiState()
-    data class Results(
-        val location: LocationModel,
-        val branches: List<Branch> = emptyList(),
-        val products: List<Product> = emptyList(),
-        val places: List<PlaceResult> = emptyList()
-    ) : SearchUiState()
-    object Empty : SearchUiState()
-    data class Error(val message: String) : SearchUiState()
-}
-
 
 class MapViewModel(
     private val getUserLocationUseCase: GetUserLocationUseCase,
@@ -66,69 +52,95 @@ class MapViewModel(
     private var popularProductsCache: List<Product> = emptyList()
 
     private var searchJob: Job? = null
-
-
+    private var updateJob: Job? = null
     fun loadLocationAndBranches(distance: Double = 5.0) {
         viewModelScope.launch {
             _uiState.value = MapUiState.Loading
             try {
-                val location = getUserLocationUseCase()
+                when (val result = getUserLocationUseCase()) {
+                    is LocationResult.PermissionDenied -> {
+                        currentLocation = null
+                        _uiState.value = MapUiState.PermissionDenied
+                    }
+                    is LocationResult.LocationDisabled -> {
+                        currentLocation = null
+                        _uiState.value = MapUiState.LocationDisabled
+                    }
+                    is LocationResult.Success -> {
+                        currentLocation = result.location
 
-                if (location == null) {
-                    _uiState.value = MapUiState.LocationUnavailable
-                    return@launch
-                } else currentLocation = location
+                        getNearbyBranchesUseCase(
+                            latitude = result.location.latitude,
+                            longitude = result.location.longitude,
+                            distance = distance
+                        ).collect { response ->
+                            when (response) {
+                                is NetworkResponse.Loading -> _uiState.value = MapUiState.Loading
+                                is NetworkResponse.Success -> {
+                                    cachedBranches = response.data.orEmpty()
+                                    _uiState.value = MapUiState.Success(result.location, cachedBranches)
 
-                getNearbyBranchesUseCase(
-                    latitude = location.latitude,
-                    longitude = location.longitude,
-                    distance = distance
-                ).collect { response ->
-                    when (response) {
-                        is NetworkResponse.Loading -> _uiState.value = MapUiState.Loading
-
-                        is NetworkResponse.Success -> {
-                            cachedBranches = response.data.orEmpty()
-                            _uiState.value = MapUiState.Success(location, cachedBranches)
-
-                            Log.d("MapViewModel", "Branches cargadas: ${cachedBranches.size} sucursales")
-                            cachedBranches.forEach { branch ->
-                                Log.d("MapViewModel", "Sucursal: ${branch.name}, ID: ${branch.branchId}")
-                            }
-
-                            // 🟢 Cargar productos populares apenas tenemos branches
-                            if (cachedBranches.isNotEmpty()) {
-                                val branchIds = cachedBranches.map { it.branchId }
-                                loadPopularProducts(branchIds, 4)
+                                    // Cargar productos populares
+                                    if (cachedBranches.isNotEmpty()) {
+                                        val branchIds = cachedBranches.map { it.branchId }
+                                        loadPopularProducts(branchIds, 4)
+                                    }
+                                }
+                                is NetworkResponse.Failure -> {
+                                    cachedBranches = emptyList()
+                                    _uiState.value = MapUiState.Success(result.location, cachedBranches)
+                                }
                             }
                         }
-
-                        is NetworkResponse.Failure -> _uiState.value = MapUiState.Success(location, emptyList())
+                    }
+                    is LocationResult.Error -> {
+                        currentLocation = null
+                        _uiState.value = MapUiState.Error("Error obteniendo ubicación")
                     }
                 }
-
             } catch (e: Exception) {
-                _uiState.value = MapUiState.Error(
-                    e.message ?: "Error desconocido al cargar mapa"
-                )
+                _uiState.value = MapUiState.Error(e.message ?: "Error desconocido al cargar mapa")
             }
         }
     }
 
-    fun updateLocation(lat: Double, lon: Double, distance: Double = 5.0){
-        viewModelScope.launch {
+
+    fun updateLocation(lat: Double, lon: Double, distance: Double = 5.0) {
+        // Cancelar cualquier job previo para evitar colecciones solapadas
+        updateJob?.cancel()
+        updateJob = viewModelScope.launch {
             val newLocation = LocationModel(lat, lon)
             currentLocation = newLocation
             _uiState.value = MapUiState.Success(newLocation, emptyList())
 
-            val response = getNearbyBranchesUseCase(
+            // Collect del flow de sucursales cercanas
+            getNearbyBranchesUseCase(
                 latitude = newLocation.latitude,
                 longitude = newLocation.longitude,
                 distance = distance
-            ).first()
+            ).collect { response ->
+                when (response) {
+                    is NetworkResponse.Loading -> {
+                        _uiState.value = MapUiState.Loading
+                    }
+                    is NetworkResponse.Success -> {
+                        cachedBranches = response.data.orEmpty()
+                        _uiState.value = MapUiState.Success(newLocation, cachedBranches)
 
-            cachedBranches = if(response is NetworkResponse.Success) response.data.orEmpty() else emptyList()
-            _uiState.value = MapUiState.Success(newLocation, cachedBranches)
+                        // Cargar productos populares si hay branches
+                        if (cachedBranches.isNotEmpty()) {
+                            val branchIds = cachedBranches.map { it.branchId }
+                            loadPopularProducts(branchIds, 5)
+                        }
+                    }
+                    is NetworkResponse.Failure -> {
+                        cachedBranches = emptyList()
+                        _uiState.value = MapUiState.Success(newLocation, cachedBranches)
+                        // Opcional: mostrar un mensaje de error al usuario
+                        Log.e("MapViewModel", "Error cargando sucursales del update location")
+                    }
+                }
+            }
         }
     }
 
@@ -152,6 +164,8 @@ class MapViewModel(
 
             val location = currentLocation
             val branchIdsForProducts = cachedBranches.map { it.branchId }
+            Log.d("MapViewModel", "_uiState actual: ${_uiState.value}")
+            Log.d("MapViewModel", "currentLocation: $currentLocation")
 
             if (query.isBlank()) {
                 // Query vacía → mostrar solo productos populares desde cache
@@ -166,45 +180,69 @@ class MapViewModel(
             }
 
             _searchState.value = SearchUiState.Loading
+
             try {
                 var filteredBranches: List<Branch> = emptyList()
                 var products: List<Product> = emptyList()
                 var places: List<PlaceResult> = emptyList()
 
-                if (location != null) {
-                    // Filtrar branches por query
-                    filteredBranches = cachedBranches.filter { branch ->
-                        val branchWords = branch.name.lowercase().split(" ")
-                        val queryWords = query.lowercase().split(" ")
-                        queryWords.any { q -> branchWords.any { it.contains(q) } }
-                    }
-                    Log.d("MapViewModel", "Branches filtradas por query '${query}': ${filteredBranches.size}")
+                when (_uiState.value) {
+                    is MapUiState.Success -> {
+                        // Filtrar sucursales por query
+                        filteredBranches = cachedBranches.filter { branch ->
+                            val branchWords = branch.name.lowercase().split(" ")
+                            val queryWords = query.lowercase().split(" ")
+                            queryWords.any { q -> branchWords.any { it.contains(q) } }
+                        }
+                        Log.d("MapViewModel", "Branches filtradas por query '${query}': ${filteredBranches.size}")
 
-                    // 🔹 Buscar en cache de populares
-                    val localMatches = popularProductsCache.filter { product ->
-                        val text = "${product.description} ${product.brand}".lowercase()
-                        query.lowercase() in text
-                    }
-                    products = localMatches
-                    Log.d("MapViewModel", "Matches en cache de populares: ${products.size}")
+                        // Buscar en cache de productos populares
+                        products = popularProductsCache.filter { product ->
+                            val text = "${product.description} ${product.brand}".lowercase()
+                            query.lowercase() in text
+                        }
+                        Log.d("MapViewModel", "Matches en cache de populares: ${products.size}")
 
-                    // 🔹 Si no hay matches en cache → buscar en API de search normal
-                    if (products.isEmpty() && branchIdsForProducts.isNotEmpty()) {
-                        Log.d("MapViewModel", "No hay matches en cache → llamando a API de búsqueda")
-                        getProductsBySearchInBranches(branchIdsForProducts, query).collect { response ->
-                            products = response.data.orEmpty()
-                            Log.d("MapViewModel", "Matches desde API: ${products.size}")
+                        if (products.isEmpty() && branchIdsForProducts.isNotEmpty()) {
+                            Log.d("MapViewModel", "No hay matches en cache → llamando a API de búsqueda")
+                            getProductsBySearchInBranches(branchIdsForProducts, query)
+                                .collect { response ->
+                                    when (response) {
+                                        is NetworkResponse.Success -> {
+                                            products = response.data.orEmpty()
+                                            Log.d("MapViewModel", "Matches desde API: ${products.size}")
+                                        }
+                                        is NetworkResponse.Failure -> {
+                                            Log.e("MapViewModel", "Error en API: ?")
+                                        }
+                                        else -> {
+                                            Log.d("MapViewModel", "Otro estado: $response")
+                                        }
+                                    }
+                                }
                         }
                     }
-                } else {
-                    // Buscar places si no hay location
-                    val placesResponse = getPlacesUseCase(query).first()
-                    if (placesResponse is NetworkResponse.Success) {
-                        places = placesResponse.data.orEmpty()
-                        Log.d("MapViewModel", "Places encontrados: ${places.size}")
+                    else -> {
+                        getPlacesUseCase(query)
+                            .catch { e ->
+                                Log.e("MapViewModel", "Error obteniendo places: ${e.message}")
+                                _searchState.value = SearchUiState.Error("Error buscando lugares")
+                            }
+                            .collect { response ->
+                                when (response) {
+                                    is NetworkResponse.Success -> {
+                                        places = response.data.orEmpty()
+                                    }
+                                    is NetworkResponse.Failure -> {
+                                        _searchState.value = SearchUiState.Error("Error buscando lugares")
+                                    }
+                                    is NetworkResponse.Loading -> {
+                                        _searchState.value = SearchUiState.Loading
+                                    }
+                                }
+                            }
                     }
                 }
-
                 _searchState.value = SearchUiState.Results(
                     location = location ?: LocationModel(0.0, 0.0),
                     branches = filteredBranches,
@@ -216,5 +254,8 @@ class MapViewModel(
                 Log.e("MapViewModel", "Error en search(): ${e.message}")
             }
         }
+    }
+    fun onPermissionDenied() {
+        _uiState.value = MapUiState.PermissionDenied
     }
 }

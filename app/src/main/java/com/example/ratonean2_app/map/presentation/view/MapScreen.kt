@@ -6,13 +6,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.example.ratonean2_app.map.presentation.component.GoogleMapView
-import com.example.ratonean2_app.map.presentation.viewmodel.MapUiState
+import com.example.ratonean2_app.map.presentation.state.MapUiState
 import com.example.ratonean2_app.map.presentation.viewmodel.MapViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
-import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -33,12 +31,17 @@ fun MapScreen(viewModel: MapViewModel) {
         if (locationPermissionState.status.isGranted) {
             viewModel.loadLocationAndBranches()
         }
+        else {
+            viewModel.onPermissionDenied()
+        }
     }
 
     when (uiState) {
         is MapUiState.Loading -> Text("Cargando mapa...")
-        is MapUiState.LocationUnavailable ->
-            Text("No se pudo obtener la ubicación.")
+        is MapUiState.LocationDisabled ->
+            Text("Location disable.")
+        is MapUiState.PermissionDenied ->
+            Text("Permiso denegado.")
         is MapUiState.Error -> Text("Error: ${(uiState as MapUiState.Error).message}")
         is MapUiState.Success -> {
             val data = uiState as MapUiState.Success

@@ -1,5 +1,7 @@
 package com.example.ratonean2_app.navigation.presentation.view
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -21,6 +23,7 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,18 +32,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.ratonean2_app.core.network.NetworkResponse
+import com.example.ratonean2_app.map.presentation.state.SearchUiState
 import com.example.ratonean2_app.map.presentation.view.MapScreen
-import com.example.ratonean2_app.map.presentation.viewmodel.MapUiState
 import com.example.ratonean2_app.map.presentation.viewmodel.MapViewModel
-import com.example.ratonean2_app.map.presentation.viewmodel.SearchUiState
 import com.example.ratonean2_app.navigation.presentation.components.DrawerContent
-import com.example.ratonean2_app.places.domain.model.PlaceResult
-import com.example.ratonean2_app.places.presentation.viewmodel.SearchViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -56,7 +57,6 @@ fun MainScreen(
     var active by remember { mutableStateOf(false) }
 
     val searchState by mapViewModel.searchState.collectAsState()
-    val currentLocation by mapViewModel.uiState.collectAsState()
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -109,7 +109,6 @@ fun MainScreen(
                         is SearchUiState.Results -> {
                             val results = searchState as SearchUiState.Results
                             LazyColumn {
-
                                 if (results.places.isNotEmpty()) {
                                     items(results.places) { place ->
                                         Text(
@@ -127,7 +126,6 @@ fun MainScreen(
                                         )
                                     }
                                 }
-
                                 // Muestra sucursales si la lista no está vacía
                                 if (results.branches.isNotEmpty()) {
                                     items(results.branches) { branch ->
@@ -139,7 +137,6 @@ fun MainScreen(
                                         )
                                     }
                                 }
-
                                 // Muestra productos si la lista no está vacía
                                 if (results.products.isNotEmpty()) {
                                     items(results.products) { product ->
