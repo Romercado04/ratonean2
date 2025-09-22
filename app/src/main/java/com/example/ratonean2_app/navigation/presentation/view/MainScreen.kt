@@ -1,7 +1,5 @@
 package com.example.ratonean2_app.navigation.presentation.view
 
-import android.Manifest
-import android.content.pm.PackageManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -23,7 +21,6 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,9 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -83,11 +78,17 @@ fun MainScreen(
                     query = it
                     mapViewModel.search(it)
                                 },
-                onSearch = { active = false
-                    mapViewModel.search(it)
+                onSearch = {
+                    // active = true
+                    mapViewModel.search(query)
                            },
                 active = active,
-                onActiveChange = { active = it },
+                onActiveChange = { isActive ->
+                    active = isActive
+                    if (isActive) {
+                        mapViewModel.search("")
+                    }
+                },
                 placeholder = { Text("Buscar...") },
                 leadingIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
@@ -109,6 +110,45 @@ fun MainScreen(
                         is SearchUiState.Results -> {
                             val results = searchState as SearchUiState.Results
                             LazyColumn {
+                                if (results.products.isNotEmpty()) {
+                                    items(results.products) { product ->
+                                        Text(
+                                            text = "🛒 ${product.description}",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                        )
+                                    }
+                                } else {
+                                    item {
+                                        Text(
+                                            "No hay productos disponibles",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                        )
+                                    }
+                                }
+                                if (results.branches.isNotEmpty()) {
+                                    items(results.branches) { branch ->
+                                        Text(
+                                            text = "🏬 ${branch.name}",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                        )
+                                    }
+                                }
+                                else {
+                                    item {
+                                        Text(
+                                            "No hay sucursales disponibles",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                        )
+                                    }
+                                }
                                 if (results.places.isNotEmpty()) {
                                     items(results.places) { place ->
                                         Text(
@@ -126,22 +166,10 @@ fun MainScreen(
                                         )
                                     }
                                 }
-                                // Muestra sucursales si la lista no está vacía
-                                if (results.branches.isNotEmpty()) {
-                                    items(results.branches) { branch ->
+                                else {
+                                    item {
                                         Text(
-                                            text = "🏬 ${branch.name}",
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                        )
-                                    }
-                                }
-                                // Muestra productos si la lista no está vacía
-                                if (results.products.isNotEmpty()) {
-                                    items(results.products) { product ->
-                                        Text(
-                                            text = "🛒 ${product.description}",
+                                            "No hay lugares disponibles",
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(16.dp)
@@ -150,7 +178,6 @@ fun MainScreen(
                                 }
                             }
                         }
-
                         else -> {}
                     }
                 }

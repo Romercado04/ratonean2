@@ -80,7 +80,6 @@ class MapViewModel(
                                     cachedBranches = response.data.orEmpty()
                                     _uiState.value = MapUiState.Success(result.location, cachedBranches)
 
-                                    // Cargar productos populares
                                     if (cachedBranches.isNotEmpty()) {
                                         val branchIds = cachedBranches.map { it.branchId }
                                         loadPopularProducts(branchIds, 4)
@@ -113,7 +112,6 @@ class MapViewModel(
             currentLocation = newLocation
             _uiState.value = MapUiState.Success(newLocation, emptyList())
 
-            // Collect del flow de sucursales cercanas
             getNearbyBranchesUseCase(
                 latitude = newLocation.latitude,
                 longitude = newLocation.longitude,
@@ -211,6 +209,26 @@ class MapViewModel(
                                         is NetworkResponse.Success -> {
                                             products = response.data.orEmpty()
                                             Log.d("MapViewModel", "Matches desde API: ${products.size}")
+                                            if(products.isEmpty()) {
+                                                getPlacesUseCase(query)
+                                                    .catch { e ->
+                                                        Log.e("MapViewModel", "Error obteniendo places: ${e.message}")
+                                                        _searchState.value = SearchUiState.Error("Error buscando lugares")
+                                                    }
+                                                    .collect { response ->
+                                                        when (response) {
+                                                            is NetworkResponse.Success -> {
+                                                                places = response.data.orEmpty()
+                                                            }
+                                                            is NetworkResponse.Failure -> {
+                                                                _searchState.value = SearchUiState.Error("Error buscando lugares")
+                                                            }
+                                                            is NetworkResponse.Loading -> {
+                                                                _searchState.value = SearchUiState.Loading
+                                                            }
+                                                        }
+                                                    }
+                                            }
                                         }
                                         is NetworkResponse.Failure -> {
                                             Log.e("MapViewModel", "Error en API: ?")
