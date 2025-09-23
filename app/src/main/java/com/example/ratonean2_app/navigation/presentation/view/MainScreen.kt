@@ -9,15 +9,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.DockedSearchBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -72,116 +74,123 @@ fun MainScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            SearchBar(
-                query = query,
-                onQueryChange = {
-                    query = it
-                    mapViewModel.search(it)
-                                },
-                onSearch = {
-                    // active = true
-                    mapViewModel.search(query)
-                           },
-                active = active,
-                onActiveChange = { isActive ->
-                    active = isActive
-                    if (isActive) {
-                        mapViewModel.search("")
-                    }
+            val onActiveChange: (Boolean) -> Unit = { isActive ->
+                active = isActive
+                if (isActive) mapViewModel.search("")
+            }
+            val colors1 = SearchBarDefaults.colors()
+            DockedSearchBar(
+                inputField = {
+                    SearchBarDefaults.InputField(
+                        query = query,
+                        onQueryChange = {
+                            query = it
+                            mapViewModel.search(it)
+                        },
+                        onSearch = { mapViewModel.search(query) },
+                        expanded = active,
+                        onExpandedChange = onActiveChange,
+                        placeholder = { Text("Buscar...") },
+                        leadingIcon = {
+                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                Icon(Icons.Default.Menu, contentDescription = "Menú")
+                            }
+                        },
+                        colors = colors1.inputFieldColors,
+                    )
                 },
-                placeholder = { Text("Buscar...") },
-                leadingIcon = {
-                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menú")
-                    }
-                },
+                expanded = active,
+                onExpandedChange = onActiveChange,
                 modifier = Modifier
-                    .fillMaxWidth()
                     .statusBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .align(Alignment.TopCenter),
-                tonalElevation = 6.dp
-            ) {
-                if (active) {
-                    when (searchState) {
-                        is SearchUiState.Loading -> Text("Buscando...")
-                        is SearchUiState.Empty -> Text("Vacio")
-                        is SearchUiState.Error -> Text("Error buscando")
-                        is SearchUiState.Results -> {
-                            val results = searchState as SearchUiState.Results
-                            LazyColumn {
-                                if (results.products.isNotEmpty()) {
-                                    items(results.products) { product ->
-                                        Text(
-                                            text = "🛒 ${product.description}",
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                        )
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(0.9f),
+                shape = RoundedCornerShape(32.dp), // 👈 bordes redondeados
+                colors = colors1,
+                tonalElevation = 6.dp,
+                shadowElevation = SearchBarDefaults.ShadowElevation,
+                content = {
+                    if (active) {
+                        when (searchState) {
+                            is SearchUiState.Loading -> Text("Buscando...")
+                            is SearchUiState.Empty -> Text("Vacio")
+                            is SearchUiState.Error -> Text("Error buscando")
+                            is SearchUiState.Results -> {
+                                val results = searchState as SearchUiState.Results
+                                LazyColumn {
+                                    if (results.products.isNotEmpty()) {
+                                        items(results.products) { product ->
+                                            Text(
+                                                text = "🛒 ${product.description}",
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp)
+                                            )
+                                        }
+                                    } else {
+                                        item {
+                                            Text(
+                                                "No hay productos disponibles",
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp)
+                                            )
+                                        }
                                     }
-                                } else {
-                                    item {
-                                        Text(
-                                            "No hay productos disponibles",
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                        )
+                                    if (results.branches.isNotEmpty()) {
+                                        items(results.branches) { branch ->
+                                            Text(
+                                                text = "🏬 ${branch.name}",
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp)
+                                            )
+                                        }
+                                    } else {
+                                        item {
+                                            Text(
+                                                "No hay sucursales disponibles",
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp)
+                                            )
+                                        }
                                     }
-                                }
-                                if (results.branches.isNotEmpty()) {
-                                    items(results.branches) { branch ->
-                                        Text(
-                                            text = "🏬 ${branch.name}",
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                        )
-                                    }
-                                }
-                                else {
-                                    item {
-                                        Text(
-                                            "No hay sucursales disponibles",
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                        )
-                                    }
-                                }
-                                if (results.places.isNotEmpty()) {
-                                    items(results.places) { place ->
-                                        Text(
-                                            text = place.displayName,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                                .clickable {
-                                                    mapViewModel.updateLocation(
-                                                        place.lat.toDouble(),
-                                                        place.lon.toDouble()
-                                                    )
-                                                    active = false
-                                                }
-                                        )
-                                    }
-                                }
-                                else {
-                                    item {
-                                        Text(
-                                            "No hay lugares disponibles",
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                        )
+                                    if (results.places.isNotEmpty()) {
+                                        items(results.places) { place ->
+                                            Text(
+                                                text = place.displayName,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp)
+                                                    .clickable {
+                                                        mapViewModel.updateLocation(
+                                                            place.lat.toDouble(),
+                                                            place.lon.toDouble()
+                                                        )
+                                                        active = false
+                                                    }
+                                            )
+                                        }
+                                    } else {
+                                        item {
+                                            Text(
+                                                "No hay lugares disponibles",
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
+
+                            else -> {}
                         }
-                        else -> {}
                     }
-                }
-            }
+                },
+            )
 
             NavHost(
                 navController = navController,
