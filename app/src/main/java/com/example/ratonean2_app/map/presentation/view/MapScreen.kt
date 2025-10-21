@@ -16,7 +16,6 @@ import com.google.accompanist.permissions.rememberPermissionState
 @Composable
 fun MapScreen(viewModel: MapViewModel) {
     val uiState by viewModel.uiState.collectAsState()
-
     val locationPermissionState = rememberPermissionState(
         android.Manifest.permission.ACCESS_FINE_LOCATION
     )
