@@ -75,6 +75,7 @@ dependencies {
     implementation(libs.bundles.compose)
     implementation(libs.bundles.compose.testing)
     implementation(libs.bundles.test.libraries)
+    implementation(libs.androidx.foundation)
     testImplementation(libs.bundles.junit5)
 
     // Core testing dependencies (these are in the `testing` bundle)
