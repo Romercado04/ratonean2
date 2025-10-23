@@ -16,6 +16,8 @@ googlesignin = "21.2.0"
 pluginserialization = "2.0.21"
 gids = "1.0.0"
 navigation = "2.9.3"
+accompanistPermissions = "0.37.3"
+
 
 
 coroutines = "1.8.0"
@@ -67,6 +69,8 @@ junit-platform-runner = { group = "org.junit.platform", name = "junit-platform-r
 
 navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+
+accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanistPermissions" }
 
 [bundles]
 ktor-client = ["ktor-client-core", "ktor-client-android", "ktor-client-content-negotiation", "ktor-serialization-kotlinx-json"]

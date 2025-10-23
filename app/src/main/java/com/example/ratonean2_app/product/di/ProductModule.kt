@@ -6,7 +6,11 @@ import com.example.ratonean2_app.product.domain.provider.ProductProvider
 import com.example.ratonean2_app.product.domain.usecase.CreateNewProductUseCase
 import com.example.ratonean2_app.product.domain.usecase.DeleteProductUseCase
 import com.example.ratonean2_app.product.domain.usecase.GetAllProductsUseCase
+import com.example.ratonean2_app.product.domain.usecase.GetPopularProductsUseCase
 import com.example.ratonean2_app.product.domain.usecase.GetProductByIdUseCase
+import com.example.ratonean2_app.product.domain.usecase.GetProductsByBranchUseCase
+import com.example.ratonean2_app.product.domain.usecase.GetProductsBySearchInBranches
+import com.example.ratonean2_app.product.domain.usecase.GetProductsWithPromosUseCase
 import com.example.ratonean2_app.product.domain.usecase.UpdateProductUseCase
 import com.example.ratonean2_app.product.presentation.viewmodel.ProductViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -20,4 +24,8 @@ val productModule = module {
     factory { UpdateProductUseCase(get()) }
     factory { DeleteProductUseCase(get()) }
     viewModel { ProductViewModel(get()) }
+    factory { GetProductsByBranchUseCase(get()) }
+    factory { GetProductsWithPromosUseCase(get()) }
+    factory { GetProductsBySearchInBranches(get()) }
+    factory { GetPopularProductsUseCase(get()) }
 }
