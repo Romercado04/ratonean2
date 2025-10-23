@@ -34,7 +34,9 @@ class ProductViewModel(
                         _products.value = emptyList()
                     }
 
-                    is NetworkResponse.Loading<*> -> TODO()
+                    is NetworkResponse.Loading -> {
+                        // nada
+                    }
                 }
             }
         }

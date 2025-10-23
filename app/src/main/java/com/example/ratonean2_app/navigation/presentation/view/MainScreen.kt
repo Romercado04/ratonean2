@@ -3,7 +3,6 @@ package com.example.ratonean2_app.navigation.presentation.view
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,7 +43,6 @@ import com.example.ratonean2_app.R
 import com.example.ratonean2_app.map.presentation.state.SearchUiState
 import com.example.ratonean2_app.map.presentation.view.MapScreen
 import com.example.ratonean2_app.map.presentation.viewmodel.MapViewModel
-import com.example.ratonean2_app.R
 import com.example.ratonean2_app.navigation.presentation.components.DrawerContent
 import com.example.ratonean2_app.product.presentation.components.ProductCard
 import com.example.ratonean2_app.product.presentation.components.ProductCard
@@ -136,13 +134,13 @@ fun MainScreen(
                                 val results = searchState as SearchUiState.Results
                                 LazyColumn {
                                     if (results.products.isNotEmpty()) {
-                                        LazyRow(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(8.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            items(filteredProducts) { product ->
+//                                        LazyRow(
+//                                            modifier = Modifier
+//                                                .fillMaxWidth()
+//                                                .padding(8.dp),
+//                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+//                                        ) {
+                                            items(results.products) { product ->
                                                 ProductCard(
                                                     storeLogoRes = R.drawable.markers_ratonean2,
                                                     productImageUrl = product.productId ?: "",
@@ -150,7 +148,7 @@ fun MainScreen(
                                                     productPrice = "$${product.listPrice}"
                                                 )
                                             }
-                                        }
+
                                     } else {
                                         item {
                                             Text(
