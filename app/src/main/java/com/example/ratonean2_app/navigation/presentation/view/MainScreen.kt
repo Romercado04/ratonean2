@@ -143,7 +143,7 @@ fun MainScreen(
                                             items(results.products) { product ->
                                                 ProductCard(
                                                     storeLogoRes = R.drawable.markers_ratonean2,
-                                                    productImageUrl = product.productId ?: "",
+                                                    productImageUrl = product.imageUrl ?: "",
                                                     productName = product.description,
                                                     productPrice = "$${product.listPrice}"
                                                 )

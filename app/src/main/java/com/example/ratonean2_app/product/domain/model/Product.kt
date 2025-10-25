@@ -20,7 +20,8 @@ data class Product(
     val promoPrice1: Double?,
     val promoLegend1: String?,
     val promoPrice2: Double?,
-    val promoLegend2: String?
+    val promoLegend2: String?,
+    val imageUrl: String?
 )
 
 //{
