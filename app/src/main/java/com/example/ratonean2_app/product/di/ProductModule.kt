@@ -1,6 +1,5 @@
 package com.example.ratonean2_app.product.di
 
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ratonean2_app.product.data.provider.ProductProviderImpl
 import com.example.ratonean2_app.product.domain.provider.ProductProvider
 import com.example.ratonean2_app.product.domain.usecase.CreateNewProductUseCase

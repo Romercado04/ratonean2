@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
+    implementation("androidx.compose.material:material-icons-extended:1.7.5")
 
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("io.coil-kt:coil-gif:2.6.0")
@@ -76,6 +77,8 @@ dependencies {
     implementation(libs.bundles.compose.testing)
     implementation(libs.bundles.test.libraries)
     implementation(libs.androidx.foundation)
+    implementation(libs.material3)
+    implementation(libs.foundation)
     testImplementation(libs.bundles.junit5)
 
     // Core testing dependencies (these are in the `testing` bundle)

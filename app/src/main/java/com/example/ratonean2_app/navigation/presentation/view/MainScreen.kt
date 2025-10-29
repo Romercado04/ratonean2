@@ -1,25 +1,25 @@
 package com.example.ratonean2_app.navigation.presentation.view
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DockedSearchBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIos
+import androidx.compose.material.icons.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
@@ -29,12 +29,14 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -45,8 +47,8 @@ import com.example.ratonean2_app.map.presentation.view.MapScreen
 import com.example.ratonean2_app.map.presentation.viewmodel.MapViewModel
 import com.example.ratonean2_app.navigation.presentation.components.DrawerContent
 import com.example.ratonean2_app.product.presentation.components.ProductCard
-import com.example.ratonean2_app.product.presentation.components.ProductCard
 import com.example.ratonean2_app.product.presentation.viewmodel.ProductViewModel
+import com.example.ratonean2_app.profile.ProfileScreen
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -54,8 +56,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun MainScreen(
     mapViewModel: MapViewModel = koinViewModel(),
-    viewModel: ProductViewModel = koinViewModel()
-
+     viewModel: ProductViewModel = koinViewModel()
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -64,9 +65,7 @@ fun MainScreen(
     var active by remember { mutableStateOf(false) }
 
     val searchState by mapViewModel.searchState.collectAsState()
-
-    val products by viewModel.products.collectAsState()
-    val filteredProducts by viewModel.filteredProducts.collectAsState()
+    var currentIndex by remember { mutableIntStateOf(0) } // índice actual del carrusel
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -87,11 +86,23 @@ fun MainScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
+            // 🌍 Mapa al fondo
+            NavHost(
+                navController = navController,
+                startDestination = "home"
+            ) {
+                composable("home") { MapScreen(viewModel = mapViewModel) }
+                composable("profile") { ProfileScreen() }
+                composable("settings") { SettingsScreen() }
+            }
+
+            // 🔍 Barra de búsqueda flotante
             val onActiveChange: (Boolean) -> Unit = { isActive ->
                 active = isActive
                 if (isActive) mapViewModel.search("")
             }
             val colors1 = SearchBarDefaults.colors()
+
             DockedSearchBar(
                 inputField = {
                     SearchBarDefaults.InputField(
@@ -99,6 +110,7 @@ fun MainScreen(
                         onQueryChange = {
                             query = it
                             mapViewModel.search(it)
+                            currentIndex = 0 // Reiniciar índice al buscar
                         },
                         onSearch = { mapViewModel.search(query) },
                         expanded = active,
@@ -120,11 +132,12 @@ fun MainScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
                     .align(Alignment.TopCenter)
                     .fillMaxWidth(0.9f),
-                shape = RoundedCornerShape(32.dp), // 👈 bordes redondeados
+                shape = RoundedCornerShape(32.dp),
                 colors = colors1,
                 tonalElevation = 6.dp,
                 shadowElevation = SearchBarDefaults.ShadowElevation,
                 content = {
+                    // 🔸 Mientras está expandido, mostrás sugerencias o lugares
                     if (active) {
                         when (searchState) {
                             is SearchUiState.Loading -> Text("Buscando...")
@@ -133,51 +146,6 @@ fun MainScreen(
                             is SearchUiState.Results -> {
                                 val results = searchState as SearchUiState.Results
                                 LazyColumn {
-                                    if (results.products.isNotEmpty()) {
-//                                        LazyRow(
-//                                            modifier = Modifier
-//                                                .fillMaxWidth()
-//                                                .padding(8.dp),
-//                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-//                                        ) {
-                                            items(results.products) { product ->
-                                                ProductCard(
-                                                    storeLogoRes = R.drawable.markers_ratonean2,
-                                                    productImageUrl = product.imageUrl ?: "",
-                                                    productName = product.description,
-                                                    productPrice = "$${product.listPrice}"
-                                                )
-                                            }
-
-                                    } else {
-                                        item {
-                                            Text(
-                                                "No hay productos disponibles",
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(16.dp)
-                                            )
-                                        }
-                                    }
-                                    if (results.branches.isNotEmpty()) {
-                                        items(results.branches) { branch ->
-                                            Text(
-                                                text = "🏬 ${branch.name}",
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(16.dp)
-                                            )
-                                        }
-                                    } else {
-                                        item {
-                                            Text(
-                                                "No hay sucursales disponibles",
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(16.dp)
-                                            )
-                                        }
-                                    }
                                     if (results.places.isNotEmpty()) {
                                         items(results.places) { place ->
                                             Text(
@@ -206,30 +174,78 @@ fun MainScreen(
                                     }
                                 }
                             }
-
                             else -> {}
                         }
                     }
                 },
             )
 
-            NavHost(
-                navController = navController,
-                startDestination = "home"
-            ) {
-                composable("home") { MapScreen(viewModel = mapViewModel) }
-                composable("profile") { ProfileScreen() }
-                composable("settings") { SettingsScreen() }
+            // 🧩 Carrusel sobre el mapa (solo si hay resultados)
+            if (searchState is SearchUiState.Results) {
+                val results = searchState as SearchUiState.Results
+                val products = results.products
+
+                if (products.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 48.dp)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Flecha izquierda
+                        if (products.size > 1) {
+                            IconButton(
+                                onClick = {
+                                    currentIndex =
+                                        if (currentIndex > 0) currentIndex - 1 else products.lastIndex
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.CenterStart)
+                                    .padding(start = 16.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowBackIos,
+                                    contentDescription = "Anterior",
+                                    tint = Color.Black
+                                )
+                            }
+                        }
+
+                        // Tarjeta actual del carrusel
+                        val product = products[currentIndex]
+                        ProductCard(
+                            storeLogoRes = R.drawable.markers_ratonean2,
+                            productImageUrl = product.imageUrl ?: "",
+                            productName = product.description,
+                            productPrice = "$${product.listPrice}",
+                            modifier = Modifier
+                                .width(280.dp)
+                                .shadow(8.dp, RoundedCornerShape(16.dp))
+                        )
+
+                        // Flecha derecha
+                        if (products.size > 1) {
+                            IconButton(
+                                onClick = {
+                                    currentIndex =
+                                        if (currentIndex < products.lastIndex) currentIndex + 1 else 0
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .padding(end = 16.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowForwardIos,
+                                    contentDescription = "Siguiente",
+                                    tint = Color.Black
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
-    }
-}
-
-// DE TESTING
-@Composable
-fun ProfileScreen() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Pantalla Perfil")
     }
 }
 
