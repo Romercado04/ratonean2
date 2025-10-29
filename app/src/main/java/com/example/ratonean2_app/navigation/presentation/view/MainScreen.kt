@@ -17,8 +17,8 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIos
-import androidx.compose.material.icons.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -205,7 +205,7 @@ fun MainScreen(
                                     .padding(start = 16.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.ArrowBackIos,
+                                    imageVector = Icons.Default.ArrowBack,
                                     contentDescription = "Anterior",
                                     tint = Color.Black
                                 )
@@ -236,7 +236,7 @@ fun MainScreen(
                                     .padding(end = 16.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.ArrowForwardIos,
+                                    imageVector = Icons.Default.ArrowForward,
                                     contentDescription = "Siguiente",
                                     tint = Color.Black
                                 )
