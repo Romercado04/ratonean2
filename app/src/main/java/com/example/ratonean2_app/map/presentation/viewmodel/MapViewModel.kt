@@ -1,11 +1,6 @@
 package com.example.ratonean2_app.map.presentation.viewmodel
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
 import android.util.Log
-import android.util.Log.e
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ratonean2_app.branch.domain.model.Branch
@@ -23,14 +18,9 @@ import com.example.ratonean2_app.product.domain.usecase.GetPopularProductsUseCas
 import com.example.ratonean2_app.product.domain.usecase.GetProductsBySearchInBranches
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.collections.emptyList
 
@@ -53,7 +43,13 @@ class MapViewModel(
 
     private var searchJob: Job? = null
     private var updateJob: Job? = null
+
+    private val _permissionState = MutableStateFlow<LocationPermissionState>(LocationPermissionState.NotAsked)
+    val permissionState: StateFlow<LocationPermissionState> = _permissionState
+
+
     fun loadLocationAndBranches(distance: Double = 5.0) {
+
         viewModelScope.launch {
             _uiState.value = MapUiState.Loading
             try {
@@ -82,7 +78,7 @@ class MapViewModel(
 
                                     if (cachedBranches.isNotEmpty()) {
                                         val branchIds = cachedBranches.map { it.branchId }
-                                        loadPopularProducts(branchIds, 4)
+                                        loadPopularProducts(branchIds, 10)
                                     }
                                 }
                                 is NetworkResponse.Failure -> {
@@ -102,7 +98,6 @@ class MapViewModel(
             }
         }
     }
-
 
     fun updateLocation(lat: Double, lon: Double, distance: Double = 5.0) {
         // Cancelar cualquier job previo para evitar colecciones solapadas
@@ -125,7 +120,6 @@ class MapViewModel(
                         cachedBranches = response.data.orEmpty()
                         _uiState.value = MapUiState.Success(newLocation, cachedBranches)
 
-                        // Cargar productos populares si hay branches
                         if (cachedBranches.isNotEmpty()) {
                             val branchIds = cachedBranches.map { it.branchId }
                             loadPopularProducts(branchIds, 5)
@@ -141,7 +135,6 @@ class MapViewModel(
             }
         }
     }
-
     fun loadPopularProducts(branchIds: List<String>, limit: Int? = 5) {
         viewModelScope.launch {
             getPopularProductsUseCase(branchIds, limit).collect { response ->
@@ -151,10 +144,21 @@ class MapViewModel(
                     popularProductsCache.forEach {
                         Log.d("MapViewModel", "Producto popular: ${it.description} - ${it.brand}")
                     }
+                    updatePopularProducts()
                 }
             }
         }
     }
+    fun updatePopularProducts() {
+        val location = currentLocation ?: LocationModel(0.0, 0.0)
+        _searchState.value = SearchUiState.Results(
+            location = location,
+            branches = cachedBranches,
+            products = popularProductsCache,
+            places = emptyList()
+        )
+    }
+
     fun search(query: String) {
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
@@ -165,15 +169,10 @@ class MapViewModel(
             Log.d("MapViewModel", "_uiState actual: ${_uiState.value}")
             Log.d("MapViewModel", "currentLocation: $currentLocation")
 
-            if (query.isBlank()) {
+            if (query.isBlank() or query.isEmpty()) {
                 // Query vacía → mostrar solo productos populares desde cache
                 Log.d("MapViewModel", "Query vacía → mostrando productos populares cacheados")
-                _searchState.value = SearchUiState.Results(
-                    location = location ?: LocationModel(0.0, 0.0),
-                    branches = cachedBranches,
-                    products = popularProductsCache,
-                    places = emptyList()
-                )
+                updatePopularProducts()
                 return@launch
             }
 
@@ -200,6 +199,25 @@ class MapViewModel(
                             query.lowercase() in text
                         }
                         Log.d("MapViewModel", "Matches en cache de populares: ${products.size}")
+
+                        getPlacesUseCase(query)
+                            .catch { e ->
+                                Log.e("MapViewModel", "Error obteniendo places: ${e.message}")
+                                _searchState.value = SearchUiState.Error("Error buscando lugares")
+                            }
+                            .collect { response ->
+                                when (response) {
+                                    is NetworkResponse.Success -> {
+                                        places = response.data.orEmpty()
+                                    }
+                                    is NetworkResponse.Failure -> {
+                                        _searchState.value = SearchUiState.Error("Error buscando lugares")
+                                    }
+                                    is NetworkResponse.Loading -> {
+                                        _searchState.value = SearchUiState.Loading
+                                    }
+                                }
+                            }
 
                         if (products.isEmpty() && branchIdsForProducts.isNotEmpty()) {
                             Log.d("MapViewModel", "No hay matches en cache → llamando a API de búsqueda")
@@ -273,7 +291,16 @@ class MapViewModel(
             }
         }
     }
-    fun onPermissionDenied() {
-        _uiState.value = MapUiState.PermissionDenied
+
+    fun onPermissionResult(granted: Boolean) {
+        _permissionState.value = if (granted) LocationPermissionState.Granted
+        else LocationPermissionState.Denied
     }
+
+}
+
+sealed interface LocationPermissionState {
+    object NotAsked : LocationPermissionState
+    object Denied : LocationPermissionState
+    object Granted : LocationPermissionState
 }

@@ -1,9 +1,18 @@
 package com.example.ratonean2_app.navigation.presentation.view
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,19 +45,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.ratonean2_app.R
+import com.example.ratonean2_app.list.presentation.view.ListScreen
 import com.example.ratonean2_app.map.presentation.state.SearchUiState
 import com.example.ratonean2_app.map.presentation.view.MapScreen
 import com.example.ratonean2_app.map.presentation.viewmodel.MapViewModel
 import com.example.ratonean2_app.navigation.presentation.components.DrawerContent
+import com.example.ratonean2_app.navigation.presentation.components.SearchBarHeader
+import com.example.ratonean2_app.navigation.presentation.components.TabButton
 import com.example.ratonean2_app.product.presentation.components.ProductCard
 import com.example.ratonean2_app.product.presentation.viewmodel.ProductViewModel
 import com.example.ratonean2_app.profile.ProfileScreen
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -56,7 +70,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun MainScreen(
     mapViewModel: MapViewModel = koinViewModel(),
-     viewModel: ProductViewModel = koinViewModel()
+    viewModel: ProductViewModel = koinViewModel()
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -66,9 +80,12 @@ fun MainScreen(
 
     val searchState by mapViewModel.searchState.collectAsState()
     var currentIndex by remember { mutableIntStateOf(0) } // índice actual del carrusel
+    var selectedTab by remember { mutableStateOf("map") }
+    var listIsActive by remember { mutableStateOf(false) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = drawerState.isOpen,
         drawerContent = {
             DrawerContent(
                 onDestinationClicked = { route ->
@@ -86,102 +103,63 @@ fun MainScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // 🌍 Mapa al fondo
-            NavHost(
-                navController = navController,
-                startDestination = "home"
+            AnimatedVisibility(
+                visible = selectedTab == "map",
+                enter = slideInHorizontally { fullWidth -> -fullWidth } + fadeIn(), // desde la izquierda
+                exit = slideOutHorizontally { fullWidth -> -fullWidth } + fadeOut() // hacia la izquierda
             ) {
-                composable("home") { MapScreen(viewModel = mapViewModel) }
-                composable("profile") { ProfileScreen() }
-                composable("settings") { SettingsScreen() }
+                MapScreen(mapViewModel)
             }
 
-            // 🔍 Barra de búsqueda flotante
-            val onActiveChange: (Boolean) -> Unit = { isActive ->
-                active = isActive
-                if (isActive) mapViewModel.search("")
+            AnimatedVisibility(
+                visible = selectedTab == "list",
+                enter = slideInHorizontally { fullWidth -> fullWidth } + fadeIn(), // desde la derecha
+                exit = slideOutHorizontally { fullWidth -> fullWidth } + fadeOut() // hacia la derecha
+            ) {
+                ListScreen(mapViewModel)
             }
-            val colors1 = SearchBarDefaults.colors()
 
-            DockedSearchBar(
-                inputField = {
-                    SearchBarDefaults.InputField(
-                        query = query,
-                        onQueryChange = {
-                            query = it
-                            mapViewModel.search(it)
-                            currentIndex = 0 // Reiniciar índice al buscar
-                        },
-                        onSearch = { mapViewModel.search(query) },
-                        expanded = active,
-                        onExpandedChange = onActiveChange,
-                        placeholder = { Text("Buscar...") },
-                        leadingIcon = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Menú")
-                            }
-                        },
-                        colors = colors1.inputFieldColors,
-                    )
-                },
-                expanded = active,
-                onExpandedChange = onActiveChange,
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth(0.9f),
-                shape = RoundedCornerShape(32.dp),
-                colors = colors1,
-                tonalElevation = 6.dp,
-                shadowElevation = SearchBarDefaults.ShadowElevation,
-                content = {
-                    // 🔸 Mientras está expandido, mostrás sugerencias o lugares
-                    if (active) {
-                        when (searchState) {
-                            is SearchUiState.Loading -> Text("Buscando...")
-                            is SearchUiState.Empty -> Text("Vacio")
-                            is SearchUiState.Error -> Text("Error buscando")
-                            is SearchUiState.Results -> {
-                                val results = searchState as SearchUiState.Results
-                                LazyColumn {
-                                    if (results.places.isNotEmpty()) {
-                                        items(results.places) { place ->
-                                            Text(
-                                                text = place.displayName,
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(16.dp)
-                                                    .clickable {
-                                                        mapViewModel.updateLocation(
-                                                            place.lat.toDouble(),
-                                                            place.lon.toDouble()
-                                                        )
-                                                        active = false
-                                                    }
-                                            )
-                                        }
-                                    } else {
-                                        item {
-                                            Text(
-                                                "No hay lugares disponibles",
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(16.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            else -> {}
+                    .padding(horizontal = 16.dp)
+            ) {
+
+                // 🔍 SearchBarHeader arriba del todo
+                SearchBarHeader(
+                    query = query,
+                    onQueryChange = { query = it },
+                    active = active,
+                    onActiveChange = { active = it },
+                    drawerState = drawerState,
+                    mapViewModel = mapViewModel,
+                    searchState = searchState,
+                    onClearClick = { query = "" },
+                )
+
+                // 🗂️ Tabs justo debajo de la search bar
+                if (!active) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        TabButton("Mapa", selectedTab == "map") {
+                            selectedTab = "map"
+                            listIsActive = false
+                        }
+                        TabButton("Lista", selectedTab == "list") {
+                            selectedTab = "list"
+                            listIsActive = true
                         }
                     }
-                },
-            )
+                }
+            }
 
             // 🧩 Carrusel sobre el mapa (solo si hay resultados)
-            if (searchState is SearchUiState.Results) {
+            if (searchState is SearchUiState.Results && !listIsActive) {
                 val results = searchState as SearchUiState.Results
                 val products = results.products
 
