@@ -1,7 +1,6 @@
 package com.example.ratonean2_app.list.presentation.view
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -9,12 +8,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import com.example.ratonean2_app.map.presentation.state.MapUiState
 import com.example.ratonean2_app.map.presentation.state.SearchUiState
 import com.example.ratonean2_app.map.presentation.viewmodel.MapViewModel
-import com.example.ratonean2_app.product.domain.model.Product
-import com.example.ratonean2_app.branch.domain.model.Branch
+import com.example.ratonean2_app.list.presentation.components.BranchItem
+import com.example.ratonean2_app.list.presentation.components.CurrentLocationHeader
+import com.example.ratonean2_app.list.presentation.components.KeywordRow
+import com.example.ratonean2_app.list.presentation.components.ListWithoutLocation
+import com.example.ratonean2_app.list.presentation.components.ProductItem
+
 
 @Composable
 fun ListScreen(
@@ -25,7 +26,12 @@ fun ListScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(8.dp)
+            .padding(
+                top = 142.dp,
+                start = 8.dp,
+                end = 8.dp,
+                bottom = 8.dp
+            ) // 🔹 deja espacio para la SearchBar
     ) {
         when (searchState) {
             is SearchUiState.Loading -> {
@@ -44,93 +50,82 @@ fun ListScreen(
                 val results = searchState as SearchUiState.Results
                 val branches = results.branches
                 val products = results.products
+                val location = results.location
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 12.dp)
+                        .padding(vertical = 8.dp)
                 ) {
+
+                    CurrentLocationHeader(location.name ?: "Tu corazón ♡")
+
+
                     if (products.isNotEmpty()) {
-                        Text("Productos populares")
-                        LazyRow(modifier = Modifier.fillMaxSize()) {
-                            items(products) { product ->
-                                ProductItem(product = product)
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "Productos populares",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        val chunkedProducts = products.chunked(2)
+
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(chunkedProducts) { columnProducts ->
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    columnProducts.forEach { product ->
+                                        ProductItem(product = product)
+                                    }
+                                }
                             }
                         }
-                    } else {
-                        Text(
-                            text = "No hay productos populares :(",
-                        )
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    KeywordRow(
+                        keywords = listOf("pan", "leche", "arroz", "yerba", "fideos", "azúcar")
+                    ) { keyword ->
+                        mapViewModel.search(keyword)
+                    }
+
                     if (branches.isNotEmpty()) {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "Sucursales cercanas",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             items(branches) { branch ->
                                 BranchItem(branch = branch)
                             }
                         }
-                    } else {
-                        Text(
-                            text = "No hay sucursales cercanas",
-                        )
+
                     }
                 }
             }
 
             SearchUiState.Idle -> {
-                //nones
+                CurrentLocationHeader("Tu corazón ♡")
+                ListWithoutLocation()
             }
 
-            SearchUiState.Empty -> {
-                //none
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProductItem(product: Product) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            product.imageUrl?.let {
-                AsyncImage(
-                    model = it,
-                    contentDescription = product.description,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .padding(end = 12.dp)
-                )
-            }
-            Column {
-                Text(product.description, style = MaterialTheme.typography.titleMedium)
-                product.brand?.let {
-                    Text(
-                        it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun BranchItem(branch: Branch) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(branch.name, style = MaterialTheme.typography.titleMedium)
+            SearchUiState.Empty -> Unit
         }
     }
 }

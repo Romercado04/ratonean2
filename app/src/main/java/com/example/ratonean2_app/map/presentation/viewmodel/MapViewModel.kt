@@ -47,9 +47,8 @@ class MapViewModel(
     private val _permissionState = MutableStateFlow<LocationPermissionState>(LocationPermissionState.NotAsked)
     val permissionState: StateFlow<LocationPermissionState> = _permissionState
 
-
+    // para usar con gps activo
     fun loadLocationAndBranches(distance: Double = 5.0) {
-
         viewModelScope.launch {
             _uiState.value = MapUiState.Loading
             try {
@@ -99,11 +98,11 @@ class MapViewModel(
         }
     }
 
-    fun updateLocation(lat: Double, lon: Double, distance: Double = 5.0) {
+    fun updateLocation(name: String = "",lat: Double, lon: Double, distance: Double = 5.0) {
         // Cancelar cualquier job previo para evitar colecciones solapadas
         updateJob?.cancel()
         updateJob = viewModelScope.launch {
-            val newLocation = LocationModel(lat, lon)
+            val newLocation = LocationModel(name,lat, lon)
             currentLocation = newLocation
             _uiState.value = MapUiState.Success(newLocation, emptyList())
 
@@ -150,7 +149,7 @@ class MapViewModel(
         }
     }
     fun updatePopularProducts() {
-        val location = currentLocation ?: LocationModel(0.0, 0.0)
+        val location = currentLocation ?: LocationModel(null,0.0, 0.0)
         _searchState.value = SearchUiState.Results(
             location = location,
             branches = cachedBranches,
@@ -280,7 +279,7 @@ class MapViewModel(
                     }
                 }
                 _searchState.value = SearchUiState.Results(
-                    location = location ?: LocationModel(0.0, 0.0),
+                    location = location ?: LocationModel(null,0.0, 0.0),
                     branches = filteredBranches,
                     products = products,
                     places = places

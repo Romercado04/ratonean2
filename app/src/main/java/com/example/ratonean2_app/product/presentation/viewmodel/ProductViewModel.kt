@@ -18,10 +18,6 @@ class ProductViewModel(
     private val _filteredProducts = MutableStateFlow<List<Product>>(emptyList())
     val filteredProducts: StateFlow<List<Product>> = _filteredProducts
 
-    init {
-        fetchProducts()
-    }
-
     private fun fetchProducts() {
         viewModelScope.launch {
             getAllProductsUseCase().collect { response ->

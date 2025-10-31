@@ -3,6 +3,7 @@ package com.example.ratonean2_app.map.data.provider
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Geocoder
 import android.location.LocationManager
 import androidx.core.content.ContextCompat
 import com.example.ratonean2_app.map.domain.model.LocationModel
@@ -10,6 +11,7 @@ import com.example.ratonean2_app.map.domain.model.LocationResult
 import com.example.ratonean2_app.map.domain.provider.LocationProvider
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -48,7 +50,10 @@ class FusedLocationProviderImpl(
         ).addOnSuccessListener { location ->
             continuation.resume(
                 if (location != null) {
-                    LocationResult.Success(LocationModel(location.latitude, location.longitude))
+                    val geocoder = Geocoder(context, Locale.getDefault())
+                    val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                    val placeName = addresses?.firstOrNull()?.locality ?: "Ubicación desconocida"
+                    LocationResult.Success(LocationModel(placeName, location.latitude, location.longitude))
                 }
                 else {
                     LocationResult.Error("Error al obtener la ubicación")

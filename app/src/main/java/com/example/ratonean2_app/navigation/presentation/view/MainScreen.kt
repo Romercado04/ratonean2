@@ -70,7 +70,6 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun MainScreen(
     mapViewModel: MapViewModel = koinViewModel(),
-    viewModel: ProductViewModel = koinViewModel()
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)

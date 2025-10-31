@@ -86,6 +86,7 @@ fun SearchBarHeader(
                                         .fillMaxWidth()
                                         .clickable {
                                             mapViewModel.updateLocation(
+                                                place.name,
                                                 place.lat.toDouble(),
                                                 place.lon.toDouble()
                                             )

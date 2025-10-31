@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PlaceResult(
     @SerialName("display_name")val displayName: String,
+    val name: String,
     val lat: String,
     val lon: String
 ){
