@@ -22,11 +22,11 @@ import com.google.android.gms.maps.model.BitmapDescriptor
 fun GoogleMapView(
     lat: Double,
     lon: Double,
-    branches: List<Branch>
+    branches: List<Branch>,
+    onMarkerClick: (Branch) -> Unit
 ) {
     val context = LocalContext.current
     val userPosition = LatLng(lat, lon)
-
     val cameraPositionState = rememberCameraPositionState()
 
     LaunchedEffect(lat, lon) {
@@ -34,16 +34,14 @@ fun GoogleMapView(
         cameraPositionState.animate(update, 1500)
     }
 
-    // Cargar y escalar icono personalizado
     val customIconState = remember { mutableStateOf<BitmapDescriptor?>(null) }
 
     GoogleMap(
         cameraPositionState = cameraPositionState,
         onMapLoaded = {
-                // Se crea el BitmapDescriptor una vez que el mapa está listo
-                val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.markers_ratonean2)
-                val scaledBitmap = bitmap.scale(100, 100, false)
-                customIconState.value = BitmapDescriptorFactory.fromBitmap(scaledBitmap)
+            val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.markers_ratonean2)
+            val scaledBitmap = bitmap.scale(100, 100, false)
+            customIconState.value = BitmapDescriptorFactory.fromBitmap(scaledBitmap)
         }
     ) {
         // Marker del usuario
@@ -57,11 +55,15 @@ fun GoogleMapView(
             Marker(
                 state = MarkerState(position = LatLng(branch.latitude, branch.longitude)),
                 title = branch.name,
-                icon = customIconState.value ?: BitmapDescriptorFactory.defaultMarker() // fallback mientras no se cargue
-
+                icon = customIconState.value ?: BitmapDescriptorFactory.defaultMarker(),
+                onClick = {
+                    onMarkerClick(branch)
+                    true
+                }
             )
         }
     }
 }
+
 
 

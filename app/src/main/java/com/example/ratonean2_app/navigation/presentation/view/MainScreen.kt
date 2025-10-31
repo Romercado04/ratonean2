@@ -91,7 +91,7 @@ fun MainScreen(
                 navController = navController,
                 startDestination = "home"
             ) {
-                composable("home") { MapScreen(viewModel = mapViewModel) }
+                composable("home") { MapScreen(mapViewModel, viewModel) }
                 composable("profile") { ProfileScreen() }
                 composable("settings") { SettingsScreen() }
             }

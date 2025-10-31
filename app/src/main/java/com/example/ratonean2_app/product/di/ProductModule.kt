@@ -22,7 +22,7 @@ val productModule = module {
     factory { GetProductByIdUseCase(get()) }
     factory { UpdateProductUseCase(get()) }
     factory { DeleteProductUseCase(get()) }
-    viewModel { ProductViewModel(get()) }
+    viewModel { ProductViewModel(get(), get()) }
     factory { GetProductsByBranchUseCase(get()) }
     factory { GetProductsWithPromosUseCase(get()) }
     factory { GetProductsBySearchInBranches(get()) }

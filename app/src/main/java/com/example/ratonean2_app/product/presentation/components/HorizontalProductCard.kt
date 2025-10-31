@@ -20,7 +20,7 @@ import coil.compose.AsyncImage
 
 @Composable
 fun HorizontalProductCard(
-    productImageUrl: String,
+    productImageUrl: String?,
     productName: String,
     productPrice: String,
     productSize: String,
@@ -40,7 +40,7 @@ fun HorizontalProductCard(
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Imagen del producto
+            // Imagen del product
             AsyncImage(
                 model = productImageUrl,
                 contentDescription = productName,
@@ -50,18 +50,18 @@ fun HorizontalProductCard(
                 contentScale = ContentScale.Fit
             )
 
-            // Columna con texto
+            // product name
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
-                verticalArrangement = Arrangement.Top // 🔹 Subimos el texto
+                verticalArrangement = Arrangement.Top
             ) {
                 Text(
                     text = productName,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    maxLines = 2, // 🔹 Ahora puede ocupar 2 líneas
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -79,7 +79,7 @@ fun HorizontalProductCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Botón comprar
+            // button buy
             OutlinedButton(
                 onClick = { /* Comprar */ },
                 modifier = Modifier
@@ -99,7 +99,7 @@ fun HorizontalProductCard(
                 Text("Comprar", color = Color.Black)
             }
 
-            // Favorito
+            // Favorite
             IconButton(onClick = { /* Favorito */ }) {
                 Icon(
                     imageVector = Icons.Default.FavoriteBorder,
