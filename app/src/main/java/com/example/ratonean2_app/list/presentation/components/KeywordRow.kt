@@ -27,44 +27,52 @@ fun KeywordRow(
             style = MaterialTheme.typography.titleMedium
         )
 
+        val chunkedKeywords = keywords.chunked(2) // 2 keywords por columna
+
         LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(keywords) { keyword ->
-                Card(
-                    onClick = { onKeywordClick(keyword) },
-                    modifier = Modifier
-                        .height(70.dp)
-                        .widthIn(min = 90.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            items(chunkedKeywords) { columnKeywords ->
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = keyword,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Icon(
-                            painter = painterResource(id = R.drawable.trendingup),
-                            contentDescription = "Tendencia",
-                            modifier = Modifier.size(18.dp)
-                        )
+                    columnKeywords.forEach { keyword ->
+                        Card(
+                            onClick = { onKeywordClick(keyword) },
+                            modifier = Modifier
+                                .height(70.dp)
+                                .widthIn(min = 90.dp),
+                            shape = MaterialTheme.shapes.medium,
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = keyword,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Icon(
+                                    painter = painterResource(id = R.drawable.trendingup),
+                                    contentDescription = "Tendencia",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

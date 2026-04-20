@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ratonean2_app.map.presentation.state.SearchUiState
 import com.example.ratonean2_app.map.presentation.viewmodel.MapViewModel
 import com.example.ratonean2_app.list.presentation.components.BranchItem
@@ -15,13 +16,15 @@ import com.example.ratonean2_app.list.presentation.components.CurrentLocationHea
 import com.example.ratonean2_app.list.presentation.components.KeywordRow
 import com.example.ratonean2_app.list.presentation.components.ListWithoutLocation
 import com.example.ratonean2_app.list.presentation.components.ProductItem
+import com.example.ratonean2_app.map.presentation.state.MapIntent
+import com.example.ratonean2_app.map.presentation.state.SearchStatus
 
 
 @Composable
 fun ListScreen(
     mapViewModel: MapViewModel
 ) {
-    val searchState by mapViewModel.searchState.collectAsState()
+    val uiState by mapViewModel.state.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
@@ -31,101 +34,105 @@ fun ListScreen(
                 start = 8.dp,
                 end = 8.dp,
                 bottom = 8.dp
-            ) // 🔹 deja espacio para la SearchBar
+            )
     ) {
-        when (searchState) {
-            is SearchUiState.Loading -> {
+        when (val status = uiState.searchStatus) {
+            is SearchStatus.Loading -> {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
 
-            is SearchUiState.Error -> {
-                val message = (searchState as SearchUiState.Error).message
+            is SearchStatus.Error -> {
                 Text(
-                    text = "Error: $message",
-                    modifier = Modifier.align(Alignment.Center)
+                    text = "Error: ${status.message}",
+                    modifier = Modifier.align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.error
                 )
             }
 
-            is SearchUiState.Results -> {
-                val results = searchState as SearchUiState.Results
-                val branches = results.branches
-                val products = results.products
-                val location = results.location
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                ) {
-
-                    CurrentLocationHeader(location.name ?: "Tu corazón ♡")
-
-
-                    if (products.isNotEmpty()) {
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(
-                            text = "Productos populares",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        val chunkedProducts = products.chunked(2)
-
-                        LazyRow(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(chunkedProducts) { columnProducts ->
-                                Column(
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    columnProducts.forEach { product ->
-                                        ProductItem(product = product)
-                                    }
-                                }
-                            }
-                        }
+            else -> {
+                if (uiState.location == null && uiState.branches.isEmpty()) {
+                    Column {
+                        CurrentLocationHeader("Tu corazón ♡")
+                        ListWithoutLocation()
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    KeywordRow(
-                        keywords = listOf("pan", "leche", "arroz", "yerba", "fideos", "azúcar")
-                    ) { keyword ->
-                        mapViewModel.search(keyword)
-                    }
-
-                    if (branches.isNotEmpty()) {
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(
-                            text = "Sucursales cercanas",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        LazyRow(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(branches) { branch ->
-                                BranchItem(branch = branch)
-                            }
+                } else {
+                    ListContent(
+                        locationName = uiState.location?.name ?: "Tu corazón ♡",
+                        products = if (uiState.searchProducts.isNotEmpty()) uiState.searchProducts else uiState.popularProductsCache,
+                        branches = if (uiState.filteredBranches.isNotEmpty()) uiState.filteredBranches else uiState.branches,
+                        onKeywordClick = { keyword ->
+                            mapViewModel.onIntent(MapIntent.SearchQuery(keyword))
                         }
+                    )
+                }
+            }
+        }
+    }
+}
 
+@Composable
+private fun ListContent(
+    locationName: String,
+    products: List<com.example.ratonean2_app.product.domain.model.Product>,
+    branches: List<com.example.ratonean2_app.branch.domain.model.Branch>,
+    onKeywordClick: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        CurrentLocationHeader(locationName)
+
+        if (products.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = if (products.size < 10) "Resultados" else "Productos populares",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            val chunkedProducts = products.chunked(2)
+
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(chunkedProducts) { columnProducts ->
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        columnProducts.forEach { product ->
+                            ProductItem(product = product)
+                        }
                     }
                 }
             }
+        }
 
-            SearchUiState.Idle -> {
-                CurrentLocationHeader("Tu corazón ♡")
-                ListWithoutLocation()
+        Spacer(modifier = Modifier.height(16.dp))
+
+        KeywordRow(
+            keywords = listOf("pan", "leche", "arroz", "yerba", "fideos", "azúcar", "carne", "cerveza", "vino", "lavandina", "jabón", "detergente")
+        ) { keyword ->
+            onKeywordClick(keyword)
+        }
+
+        if (branches.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Sucursales cercanas",
+                style = MaterialTheme.typography.titleMedium
+            )
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(branches) { branch ->
+                    BranchItem(branch = branch)
+                }
             }
-
-            SearchUiState.Empty -> Unit
         }
     }
 }
