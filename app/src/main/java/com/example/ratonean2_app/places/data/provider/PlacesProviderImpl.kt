@@ -10,27 +10,29 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 
 class PlacesProviderImpl(private val client: HttpClient) : PlacesProvider {
-    override suspend fun getPlaces(query: String): Flow<NetworkResponse<List<PlaceResult>>> = flow {
-        try {
+    override suspend fun getPlaces(query: String): Flow<NetworkResponse<List<PlaceResult>>> =
+        flow {
             emit(NetworkResponse.Loading())
-            val response = client.get(ApiUrls.PLACES_URL){
+
+            val response = client.get(ApiUrls.PLACES_URL) {
                 parameter("q", query)
                 parameter("format", "json")
                 parameter("addressdetails", 1)
                 parameter("limit", 5)
                 parameter("countrycodes", "ar")
             }
+
             if (response.status.isSuccess()) {
                 val places = response.body<List<PlaceResult>>()
                 emit(NetworkResponse.Success(places))
             } else {
                 emit(NetworkResponse.Failure("Error: ${response.status.value}"))
             }
-        }catch (e: Exception) {
+        }.catch { e ->
             emit(NetworkResponse.Failure(e.message ?: "Unknown error"))
         }
-    }
 }

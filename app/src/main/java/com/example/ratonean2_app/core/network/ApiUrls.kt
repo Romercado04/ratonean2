@@ -4,7 +4,6 @@ object ApiUrls {
     const val BASE_URL =  "http://192.168.100.6:8080"
     const val LOGIN = "${BASE_URL}/auth/login"
     const val AUTH_GOOGLE = "${BASE_URL}/auth/google"
-
     const val USERS = "${BASE_URL}/users"
     const val USER_BY_ID = "${BASE_URL}/users/{id}"
     const val USER_BY_EMAIL = "${BASE_URL}/users/by-email/{email}"

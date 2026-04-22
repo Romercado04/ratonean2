@@ -180,6 +180,14 @@ class MapViewModel(
                 }
 
             } catch (e: Exception) {
+                var places: List<PlaceResult> = emptyList()
+                places = fetchPlaces(query)
+                _state.update {
+                    it.copy(
+                        searchPlaces = places,
+                        searchStatus = SearchStatus.Success
+                    )
+                }
                 Log.e("MapViewModel", "Error en search(): ${e.message}")
                 _state.update { it.copy(searchStatus = SearchStatus.Error(e.message ?: "Error desconocido")) }
             }
@@ -187,12 +195,28 @@ class MapViewModel(
     }
     private suspend fun fetchPlaces(query: String): List<PlaceResult> {
         return try {
+            Log.d("MapViewModel", "Buscando places: $query")
+
             val response = getPlacesUseCase(query)
-                .catch { Log.e("MapViewModel", "Error en places: ${it.message}") }
+                .catch {
+                    Log.e("MapViewModel", "Error en places FLOW", it)
+                }
                 .first { it !is NetworkResponse.Loading }
 
-            if (response is NetworkResponse.Success) response.data.orEmpty() else emptyList()
+            when (response) {
+                is NetworkResponse.Success -> {
+                    Log.d("MapViewModel", "Places encontrados: ${response.data?.size}")
+                    response.data.orEmpty()
+                }
+                is NetworkResponse.Failure -> {
+                    Log.e("MapViewModel", "Places FAILURE", response.error as Throwable?)
+                    emptyList()
+                }
+                else -> emptyList()
+            }
+
         } catch (e: Exception) {
+            Log.e("MapViewModel", "Crash en fetchPlaces", e)
             emptyList()
         }
     }

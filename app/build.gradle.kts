@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.example.ratonean2_app"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.ratonean2_app"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -69,6 +69,10 @@ dependencies {
 
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("io.coil-kt:coil-gif:2.6.0")
+
+    // MapLibre
+    implementation(libs.maplibre.android)
+    implementation(libs.maplibre.compose)
 
     // Using bundles to clean up redundant lines
     implementation(libs.bundles.ktor.client)

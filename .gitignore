@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+.idea/firebender/
+.idea/
+!.idea/runConfigurations/
+.gradle/
+build/
+.kotlin/errors/

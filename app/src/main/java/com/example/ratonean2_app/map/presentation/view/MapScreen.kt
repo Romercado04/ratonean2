@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ratonean2_app.map.presentation.component.GoogleMapView
+import com.example.ratonean2_app.map.presentation.component.MapLibreView
 import com.example.ratonean2_app.map.presentation.state.LocationPermissionState
 import com.example.ratonean2_app.map.presentation.state.MapIntent
 import com.example.ratonean2_app.map.presentation.state.MapStatus
@@ -45,10 +46,9 @@ fun MapScreen(viewModel: MapViewModel) {
                     }
                     is MapStatus.Success -> {
                         uiState.location?.let { loc ->
-                            GoogleMapView(
+                            MapLibreView(
                                 lat = loc.latitude,
                                 lon = loc.longitude,
-                                branches = uiState.branches
                             )
                         }
                     }
@@ -63,10 +63,9 @@ fun MapScreen(viewModel: MapViewModel) {
 
             LocationPermissionState.Denied -> {
                 if (uiState.location != null) {
-                    GoogleMapView(
+                    MapLibreView(
                         lat = uiState.location!!.latitude,
                         lon = uiState.location!!.longitude,
-                        branches = uiState.branches
                     )
                 } else {
                     CenteredText("Permiso denegado. No podemos mostrar tu ubicación actual.")

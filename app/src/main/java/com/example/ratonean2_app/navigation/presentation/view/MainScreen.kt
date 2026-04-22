@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -69,18 +70,21 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
+    modifier: Modifier = Modifier,
     mapViewModel: MapViewModel = koinViewModel(),
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    // UI Local State
     var query by remember { mutableStateOf("") }
     var active by remember { mutableStateOf(false) }
-
-    val searchState by mapViewModel.searchState.collectAsState()
-    var currentIndex by remember { mutableIntStateOf(0) } // índice actual del carrusel
     var selectedTab by remember { mutableStateOf("map") }
-    var listIsActive by remember { mutableStateOf(false) }
+
+    // Observamos el estado MVI único
+    val uiState by mapViewModel.state.collectAsStateWithLifecycle()
+    var currentIndex by remember { mutableIntStateOf(0) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -102,30 +106,29 @@ fun MainScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
+            // --- CONTENIDO DE PANTALLAS ---
             AnimatedVisibility(
                 visible = selectedTab == "map",
-                enter = slideInHorizontally { fullWidth -> -fullWidth } + fadeIn(), // desde la izquierda
-                exit = slideOutHorizontally { fullWidth -> -fullWidth } + fadeOut() // hacia la izquierda
+                enter = slideInHorizontally { -it } + fadeIn(),
+                exit = slideOutHorizontally { -it } + fadeOut()
             ) {
                 MapScreen(mapViewModel)
             }
 
             AnimatedVisibility(
                 visible = selectedTab == "list",
-                enter = slideInHorizontally { fullWidth -> fullWidth } + fadeIn(), // desde la derecha
-                exit = slideOutHorizontally { fullWidth -> fullWidth } + fadeOut() // hacia la derecha
+                enter = slideInHorizontally { it } + fadeIn(),
+                exit = slideOutHorizontally { it } + fadeOut()
             ) {
                 ListScreen(mapViewModel)
             }
 
+            // --- HEADER (SearchBar + Tabs) ---
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp)
             ) {
-
-                // 🔍 SearchBarHeader arriba del todo
                 SearchBarHeader(
                     query = query,
                     onQueryChange = { query = it },
@@ -133,11 +136,10 @@ fun MainScreen(
                     onActiveChange = { active = it },
                     drawerState = drawerState,
                     mapViewModel = mapViewModel,
-                    searchState = searchState,
+                    uiState = uiState, // Pasamos el estado unificado
                     onClearClick = { query = "" },
                 )
 
-                // 🗂️ Tabs justo debajo de la search bar
                 if (!active) {
                     Row(
                         modifier = Modifier
@@ -145,91 +147,53 @@ fun MainScreen(
                             .padding(top = 8.dp),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        TabButton("Mapa", selectedTab == "map") {
-                            selectedTab = "map"
-                            listIsActive = false
-                        }
-                        TabButton("Lista", selectedTab == "list") {
-                            selectedTab = "list"
-                            listIsActive = true
-                        }
+                        TabButton("Mapa", selectedTab == "map") { selectedTab = "map" }
+                        TabButton("Lista", selectedTab == "list") { selectedTab = "list" }
                     }
                 }
             }
 
-            // 🧩 Carrusel sobre el mapa (solo si hay resultados)
-            if (searchState is SearchUiState.Results && !listIsActive) {
-                val results = searchState as SearchUiState.Results
-                val products = results.products
+            // --- CARRUSEL DE PRODUCTOS (Solo en Mapa) ---
+            if (selectedTab == "map" && uiState.searchProducts.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 48.dp)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val products = uiState.searchProducts
 
-                if (products.isNotEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 48.dp)
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Flecha izquierda
-                        if (products.size > 1) {
-                            IconButton(
-                                onClick = {
-                                    currentIndex =
-                                        if (currentIndex > 0) currentIndex - 1 else products.lastIndex
-                                },
-                                modifier = Modifier
-                                    .align(Alignment.CenterStart)
-                                    .padding(start = 16.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowBack,
-                                    contentDescription = "Anterior",
-                                    tint = Color.Black
-                                )
-                            }
+                    if (products.size > 1) {
+                        IconButton(
+                            onClick = { currentIndex = if (currentIndex > 0) currentIndex - 1 else products.lastIndex },
+                            modifier = Modifier.align(Alignment.CenterStart).padding(start = 16.dp)
+                        ) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Anterior", tint = Color.Black)
                         }
+                    }
 
-                        // Tarjeta actual del carrusel
-                        val product = products[currentIndex]
+                    val currentProduct = products.getOrNull(currentIndex)
+                    currentProduct?.let { product ->
                         ProductCard(
                             storeLogoRes = R.drawable.markers_ratonean2,
                             productImageUrl = product.imageUrl ?: "",
                             productName = product.description,
                             productPrice = "$${product.listPrice}",
-                            modifier = Modifier
-                                .width(280.dp)
-                                .shadow(8.dp, RoundedCornerShape(16.dp))
+                            modifier = Modifier.width(280.dp).shadow(8.dp, RoundedCornerShape(16.dp))
                         )
+                    }
 
-                        // Flecha derecha
-                        if (products.size > 1) {
-                            IconButton(
-                                onClick = {
-                                    currentIndex =
-                                        if (currentIndex < products.lastIndex) currentIndex + 1 else 0
-                                },
-                                modifier = Modifier
-                                    .align(Alignment.CenterEnd)
-                                    .padding(end = 16.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowForward,
-                                    contentDescription = "Siguiente",
-                                    tint = Color.Black
-                                )
-                            }
+                    if (products.size > 1) {
+                        IconButton(
+                            onClick = { currentIndex = if (currentIndex < products.lastIndex) currentIndex + 1 else 0 },
+                            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp)
+                        ) {
+                            Icon(Icons.Default.ArrowForward, contentDescription = "Siguiente", tint = Color.Black)
                         }
                     }
                 }
             }
         }
-    }
-}
-
-// DE TESTING
-@Composable
-fun SettingsScreen() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Pantalla Configuración")
     }
 }
