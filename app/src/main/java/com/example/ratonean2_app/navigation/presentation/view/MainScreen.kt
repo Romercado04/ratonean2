@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DockedSearchBar
 import androidx.compose.material3.DrawerValue
@@ -36,6 +38,7 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -77,14 +80,21 @@ fun MainScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    // UI Local State
     var query by remember { mutableStateOf("") }
     var active by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf("map") }
 
-    // Observamos el estado MVI único
     val uiState by mapViewModel.state.collectAsStateWithLifecycle()
     var currentIndex by remember { mutableIntStateOf(0) }
+
+    val pagerState = rememberPagerState(pageCount = { 2 })
+
+    LaunchedEffect(selectedTab) {
+        val target = if (selectedTab == "map") 0 else 1
+        if (pagerState.currentPage != target) {
+            pagerState.animateScrollToPage(target)
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -106,24 +116,24 @@ fun MainScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // --- CONTENIDO DE PANTALLAS ---
-            AnimatedVisibility(
-                visible = selectedTab == "map",
-                enter = slideInHorizontally { -it } + fadeIn(),
-                exit = slideOutHorizontally { -it } + fadeOut()
-            ) {
-                MapScreen(mapViewModel)
+            HorizontalPager(
+                state = pagerState,
+                userScrollEnabled = false,
+                modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = 1
+            ) { page ->
+                when (page) {
+                    0 -> MapScreen(
+                        uiState = uiState,
+                        onIntent = { mapViewModel.onIntent(it) }
+                    )
+                    1 -> ListScreen(
+                        uiState = uiState,
+                        onIntent = { mapViewModel.onIntent(it) }
+                    )
+                }
             }
 
-            AnimatedVisibility(
-                visible = selectedTab == "list",
-                enter = slideInHorizontally { it } + fadeIn(),
-                exit = slideOutHorizontally { it } + fadeOut()
-            ) {
-                ListScreen(mapViewModel)
-            }
-
-            // --- HEADER (SearchBar + Tabs) ---
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -135,9 +145,9 @@ fun MainScreen(
                     active = active,
                     onActiveChange = { active = it },
                     drawerState = drawerState,
-                    mapViewModel = mapViewModel,
-                    uiState = uiState, // Pasamos el estado unificado
+                    uiState = uiState,
                     onClearClick = { query = "" },
+                    onIntent = { intent -> mapViewModel.onIntent(intent) },
                 )
 
                 if (!active) {
@@ -153,7 +163,6 @@ fun MainScreen(
                 }
             }
 
-            // --- CARRUSEL DE PRODUCTOS (Solo en Mapa) ---
             if (selectedTab == "map" && uiState.searchProducts.isNotEmpty()) {
                 Box(
                     modifier = Modifier

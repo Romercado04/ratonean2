@@ -5,6 +5,15 @@ import com.example.ratonean2_app.map.domain.model.LocationModel
 import com.example.ratonean2_app.places.domain.model.PlaceResult
 import com.example.ratonean2_app.product.domain.model.Product
 
+sealed interface SearchStatus {
+
+    object Empty : SearchStatus
+    object Idle : SearchStatus
+    object Loading : SearchStatus
+    object Success : SearchStatus
+    data class Error(val message: String) : SearchStatus
+}
+
 sealed class SearchUiState {
     object Idle : SearchUiState()
     object Loading : SearchUiState()

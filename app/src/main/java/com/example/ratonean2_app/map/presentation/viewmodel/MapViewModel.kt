@@ -1,9 +1,10 @@
 package com.example.ratonean2_app.map.presentation.viewmodel
 
 import android.util.Log
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.ratonean2_app.branch.domain.model.Branch
 import com.example.ratonean2_app.branch.domain.usecase.GetNearbyBranchesUseCase
 import com.example.ratonean2_app.core.network.NetworkResponse
 import com.example.ratonean2_app.map.domain.model.LocationModel
@@ -12,13 +13,10 @@ import com.example.ratonean2_app.map.domain.usercase.GetUserLocationUseCase
 import com.example.ratonean2_app.map.presentation.state.LocationPermissionState
 import com.example.ratonean2_app.map.presentation.state.MapIntent
 import com.example.ratonean2_app.map.presentation.state.MapStatus
-import com.example.ratonean2_app.map.presentation.state.MapUiState
 import com.example.ratonean2_app.map.presentation.state.MapViewState
 import com.example.ratonean2_app.map.presentation.state.SearchStatus
-import com.example.ratonean2_app.map.presentation.state.SearchUiState
 import com.example.ratonean2_app.places.domain.model.PlaceResult
 import com.example.ratonean2_app.places.domain.usecase.GetPlacesUseCase
-import com.example.ratonean2_app.product.domain.model.Product
 import com.example.ratonean2_app.product.domain.usecase.GetPopularProductsUseCase
 import com.example.ratonean2_app.product.domain.usecase.GetProductsBySearchInBranches
 import kotlinx.coroutines.Job
@@ -26,12 +24,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.collections.emptyList
 
+@Stable
 class MapViewModel(
     private val getUserLocationUseCase: GetUserLocationUseCase,
     private val getNearbyBranchesUseCase: GetNearbyBranchesUseCase,
@@ -43,8 +41,13 @@ class MapViewModel(
     private val _state = MutableStateFlow(MapViewState())
     val state: StateFlow<MapViewState> = _state.asStateFlow()
 
-    private var searchJob: Job? = null
-    private var updateJob: Job? = null
+    @Immutable
+    private class SearchManager {
+        var searchJob: Job? = null
+        var updateJob: Job? = null
+    }
+
+    private val jobs = SearchManager()
 
     fun onIntent(intent: MapIntent) {
         when (intent) {
@@ -84,8 +87,8 @@ class MapViewModel(
     }
 
     private fun handleUpdateLocation(lat: Double, lon: Double, name: String?, distance: Double = 5.0) {
-        updateJob?.cancel()
-        updateJob = viewModelScope.launch {
+        jobs.updateJob?.cancel()
+        jobs.updateJob = viewModelScope.launch {
             val newLocation = LocationModel(name, lat, lon)
             _state.update { it.copy(location = newLocation, mapStatus = MapStatus.Loading) }
 
@@ -123,7 +126,7 @@ class MapViewModel(
     }
 
     private fun handleSearch(query: String) {
-        searchJob?.cancel() // Cancelamos la búsqueda previa
+        jobs.searchJob?.cancel()
 
         if (query.isBlank()) {
             _state.update { it.copy(
@@ -135,19 +138,17 @@ class MapViewModel(
             return
         }
 
-        searchJob = viewModelScope.launch {
+        jobs.searchJob = viewModelScope.launch {
             try {
-                delay(500) // Debounce
+                delay(500)
                 _state.update { it.copy(searchStatus = SearchStatus.Loading) }
 
-                // 1. Filtrado local de sucursales (Sincrónico)
                 val filteredBranches = _state.value.branches.filter { branch ->
                     val branchWords = branch.name.lowercase().split(" ")
                     val queryWords = query.lowercase().split(" ")
                     queryWords.any { q -> branchWords.any { it.contains(q) } }
                 }
 
-                // 2. Filtrado local de productos (Cache)
                 var products = _state.value.popularProductsCache.filter { product ->
                     val text = "${product.description} ${product.brand}".lowercase()
                     query.lowercase() in text
@@ -156,9 +157,7 @@ class MapViewModel(
                 var places: List<PlaceResult> = emptyList()
                 val branchIds = _state.value.branches.map { it.branchId }
 
-                // 3. Lógica de búsqueda remota
                 if (products.isEmpty() && branchIds.isNotEmpty()) {
-                    // Buscamos en la API de productos
                     val apiResponse = getProductsBySearchInBranches(branchIds, query)
                         .first { it !is NetworkResponse.Loading }
 
@@ -167,7 +166,6 @@ class MapViewModel(
                     }
                 }
 
-                // 4. Si después de todo no hay productos, buscamos lugares (Calles/Ciudades)
                 if (products.isEmpty()) {
                     places = fetchPlaces(query)
                 }
@@ -183,7 +181,6 @@ class MapViewModel(
                 }
 
             } catch (e: kotlinx.coroutines.CancellationException) {
-                // No hacer nada, es una cancelación normal por el debounce
                 throw e
             } catch (e: Exception) {
                 Log.e("MapViewModel", "Error en search(): ${e.message}")

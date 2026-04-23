@@ -8,23 +8,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.ratonean2_app.map.presentation.state.SearchUiState
-import com.example.ratonean2_app.map.presentation.viewmodel.MapViewModel
+import com.example.ratonean2_app.branch.domain.model.Branch
 import com.example.ratonean2_app.list.presentation.components.BranchItem
 import com.example.ratonean2_app.list.presentation.components.CurrentLocationHeader
 import com.example.ratonean2_app.list.presentation.components.KeywordRow
 import com.example.ratonean2_app.list.presentation.components.ListWithoutLocation
 import com.example.ratonean2_app.list.presentation.components.ProductItem
 import com.example.ratonean2_app.map.presentation.state.MapIntent
+import com.example.ratonean2_app.map.presentation.state.MapViewState
 import com.example.ratonean2_app.map.presentation.state.SearchStatus
+import com.example.ratonean2_app.product.domain.model.Product
+import kotlin.collections.isNotEmpty
 
 
 @Composable
 fun ListScreen(
-    mapViewModel: MapViewModel
+    uiState: MapViewState,
+    onIntent: (MapIntent) -> Unit
 ) {
-    val uiState by mapViewModel.state.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
@@ -58,10 +59,10 @@ fun ListScreen(
                 } else {
                     ListContent(
                         locationName = uiState.location?.name ?: "Tu corazón ♡",
-                        products = if (uiState.searchProducts.isNotEmpty()) uiState.searchProducts else uiState.popularProductsCache,
-                        branches = if (uiState.filteredBranches.isNotEmpty()) uiState.filteredBranches else uiState.branches,
+                        products = uiState.searchProducts.ifEmpty { uiState.popularProductsCache },
+                        branches = uiState.filteredBranches.ifEmpty { uiState.branches },
                         onKeywordClick = { keyword ->
-                            mapViewModel.onIntent(MapIntent.SearchQuery(keyword))
+                            onIntent(MapIntent.SearchQuery(keyword))
                         }
                     )
                 }
@@ -73,8 +74,8 @@ fun ListScreen(
 @Composable
 private fun ListContent(
     locationName: String,
-    products: List<com.example.ratonean2_app.product.domain.model.Product>,
-    branches: List<com.example.ratonean2_app.branch.domain.model.Branch>,
+    products: List<Product>,
+    branches: List<Branch>,
     onKeywordClick: (String) -> Unit
 ) {
     Column(

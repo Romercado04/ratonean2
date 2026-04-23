@@ -35,7 +35,7 @@ fun SearchBarHeader(
     onActiveChange: (Boolean) -> Unit,
     onClearClick: () -> Unit,
     drawerState: DrawerState,
-    mapViewModel: MapViewModel,
+    onIntent: (MapIntent) -> Unit,
     uiState: MapViewState, // Usamos el estado unificado aquí
     modifier: Modifier = Modifier
 ) {
@@ -47,9 +47,9 @@ fun SearchBarHeader(
                 query = query,
                 onQueryChange = {
                     onQueryChange(it)
-                    mapViewModel.onIntent(MapIntent.SearchQuery(it))
+                    onIntent(MapIntent.SearchQuery(it))
                 },
-                onSearch = { mapViewModel.onIntent(MapIntent.SearchQuery(query)) },
+                onSearch = { onIntent(MapIntent.SearchQuery(query)) },
                 expanded = active,
                 onExpandedChange = onActiveChange,
                 placeholder = { Text("Buscar...") },
@@ -84,7 +84,7 @@ fun SearchBarHeader(
                                             .padding(12.dp)
                                             .fillMaxWidth()
                                             .clickable {
-                                                mapViewModel.onIntent(MapIntent.UpdateLocation(
+                                                onIntent(MapIntent.UpdateLocation(
                                                     branch.latitude,
                                                     branch.longitude,
                                                     branch.name
@@ -105,8 +105,6 @@ fun SearchBarHeader(
                                             .padding(12.dp)
                                             .fillMaxWidth()
                                             .clickable {
-                                                // Acá podrías navegar al detalle del producto o centrar
-                                                // el mapa en las sucursales que lo tienen
                                                 onActiveChange(false)
                                             }
                                     )
@@ -123,7 +121,7 @@ fun SearchBarHeader(
                                             .padding(12.dp)
                                             .fillMaxWidth()
                                             .clickable {
-                                                mapViewModel.onIntent(MapIntent.UpdateLocation(
+                                                onIntent(MapIntent.UpdateLocation(
                                                     place.lat.toDouble(),
                                                     place.lon.toDouble(),
                                                     place.name

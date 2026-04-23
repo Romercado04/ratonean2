@@ -73,6 +73,7 @@ dependencies {
     // MapLibre
     implementation(libs.maplibre.android)
     implementation(libs.maplibre.compose)
+    implementation("org.maplibre.gl:android-plugin-annotation-v9:3.0.2")
 
     // Using bundles to clean up redundant lines
     implementation(libs.bundles.ktor.client)

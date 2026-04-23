@@ -11,6 +11,7 @@ import com.example.ratonean2_app.map.presentation.component.MapLibreView
 import com.example.ratonean2_app.map.presentation.state.LocationPermissionState
 import com.example.ratonean2_app.map.presentation.state.MapIntent
 import com.example.ratonean2_app.map.presentation.state.MapStatus
+import com.example.ratonean2_app.map.presentation.state.MapViewState
 import com.example.ratonean2_app.map.presentation.viewmodel.MapViewModel
 import com.example.ratonean2_app.navigation.presentation.components.CenteredText
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -19,20 +20,22 @@ import com.google.accompanist.permissions.rememberPermissionState
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun MapScreen(viewModel: MapViewModel) {
-    val uiState by viewModel.state.collectAsStateWithLifecycle()
+fun MapScreen(
+    uiState: MapViewState,
+    onIntent: (MapIntent) -> Unit
+) {
 
     val locationPermissionState = rememberPermissionState(
         android.Manifest.permission.ACCESS_FINE_LOCATION
     )
 
     LaunchedEffect(locationPermissionState.status.isGranted) {
-        viewModel.onIntent(MapIntent.OnPermissionResult(locationPermissionState.status.isGranted))
+        onIntent(MapIntent.OnPermissionResult(locationPermissionState.status.isGranted))
     }
 
     LaunchedEffect(uiState.permissionState) {
         if (uiState.permissionState == LocationPermissionState.Granted) {
-            viewModel.onIntent(MapIntent.LoadLocation)
+            onIntent(MapIntent.LoadLocation)
         }
     }
 
@@ -48,6 +51,7 @@ fun MapScreen(viewModel: MapViewModel) {
                             MapLibreView(
                                 lat = loc.latitude,
                                 lon = loc.longitude,
+                                branches = uiState.branches
                             )
                         }
                     }
@@ -65,6 +69,7 @@ fun MapScreen(viewModel: MapViewModel) {
                     MapLibreView(
                         lat = uiState.location!!.latitude,
                         lon = uiState.location!!.longitude,
+                        branches = uiState.branches
                     )
                 } else {
                     CenteredText("Permiso denegado. No podemos mostrar tu ubicación actual.")

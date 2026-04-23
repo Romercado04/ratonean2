@@ -1,8 +1,11 @@
 package com.example.ratonean2_app.product.domain.model
 
+import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
 
+
 @Serializable
+@Immutable
 data class Product(
     val commerceId: String,
     val flagId: String,
