@@ -7,7 +7,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.ratonean2_app.map.presentation.component.GoogleMapView
 import com.example.ratonean2_app.map.presentation.component.MapLibreView
 import com.example.ratonean2_app.map.presentation.state.LocationPermissionState
 import com.example.ratonean2_app.map.presentation.state.MapIntent

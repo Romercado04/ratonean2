@@ -123,7 +123,7 @@ class MapViewModel(
     }
 
     private fun handleSearch(query: String) {
-        searchJob?.cancel()
+        searchJob?.cancel() // Cancelamos la búsqueda previa
 
         if (query.isBlank()) {
             _state.update { it.copy(
@@ -136,36 +136,39 @@ class MapViewModel(
         }
 
         searchJob = viewModelScope.launch {
-            delay(500)
-            _state.update { it.copy(searchStatus = SearchStatus.Loading) }
-
             try {
+                delay(500) // Debounce
+                _state.update { it.copy(searchStatus = SearchStatus.Loading) }
+
+                // 1. Filtrado local de sucursales (Sincrónico)
                 val filteredBranches = _state.value.branches.filter { branch ->
                     val branchWords = branch.name.lowercase().split(" ")
                     val queryWords = query.lowercase().split(" ")
                     queryWords.any { q -> branchWords.any { it.contains(q) } }
                 }
 
+                // 2. Filtrado local de productos (Cache)
                 var products = _state.value.popularProductsCache.filter { product ->
                     val text = "${product.description} ${product.brand}".lowercase()
                     query.lowercase() in text
                 }
 
                 var places: List<PlaceResult> = emptyList()
-
                 val branchIds = _state.value.branches.map { it.branchId }
 
+                // 3. Lógica de búsqueda remota
                 if (products.isEmpty() && branchIds.isNotEmpty()) {
-                    Log.d("MapViewModel", "No hay matches en cache → API de búsqueda")
-                    val apiResponse = getProductsBySearchInBranches(branchIds, query).first { it !is NetworkResponse.Loading }
+                    // Buscamos en la API de productos
+                    val apiResponse = getProductsBySearchInBranches(branchIds, query)
+                        .first { it !is NetworkResponse.Loading }
 
                     if (apiResponse is NetworkResponse.Success) {
                         products = apiResponse.data.orEmpty()
-                        if (products.isEmpty()) {
-                            places = fetchPlaces(query)
-                        }
                     }
-                } else {
+                }
+
+                // 4. Si después de todo no hay productos, buscamos lugares (Calles/Ciudades)
+                if (products.isEmpty()) {
                     places = fetchPlaces(query)
                 }
 
@@ -179,47 +182,32 @@ class MapViewModel(
                     )
                 }
 
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // No hacer nada, es una cancelación normal por el debounce
+                throw e
             } catch (e: Exception) {
-                var places: List<PlaceResult> = emptyList()
-                places = fetchPlaces(query)
-                _state.update {
-                    it.copy(
-                        searchPlaces = places,
-                        searchStatus = SearchStatus.Success
-                    )
-                }
                 Log.e("MapViewModel", "Error en search(): ${e.message}")
                 _state.update { it.copy(searchStatus = SearchStatus.Error(e.message ?: "Error desconocido")) }
             }
         }
     }
+
     private suspend fun fetchPlaces(query: String): List<PlaceResult> {
-        return try {
-            Log.d("MapViewModel", "Buscando places: $query")
-
-            val response = getPlacesUseCase(query)
-                .catch {
-                    Log.e("MapViewModel", "Error en places FLOW", it)
-                }
-                .first { it !is NetworkResponse.Loading }
-
-            when (response) {
-                is NetworkResponse.Success -> {
-                    Log.d("MapViewModel", "Places encontrados: ${response.data?.size}")
-                    response.data.orEmpty()
-                }
-                is NetworkResponse.Failure -> {
-                    Log.e("MapViewModel", "Places FAILURE", response.error as Throwable?)
-                    emptyList()
-                }
-                else -> emptyList()
-            }
-
+        val response: NetworkResponse<List<PlaceResult>> = try {
+            getPlacesUseCase(query)
         } catch (e: Exception) {
-            Log.e("MapViewModel", "Crash en fetchPlaces", e)
-            emptyList()
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            Log.e("MapViewModel", "Error en fetchPlaces: ${e.message}")
+            NetworkResponse.Failure(e.message ?: "Error")
+        }
+
+        return when (response) {
+            is NetworkResponse.Success -> response.data.orEmpty()
+            else -> emptyList()
         }
     }
+
+
 
     private fun handlePermissionResult(granted: Boolean) {
         val pState = if (granted) LocationPermissionState.Granted else LocationPermissionState.Denied

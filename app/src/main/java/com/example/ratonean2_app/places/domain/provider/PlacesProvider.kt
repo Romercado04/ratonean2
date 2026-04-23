@@ -5,5 +5,5 @@ import com.example.ratonean2_app.places.domain.model.PlaceResult
 import kotlinx.coroutines.flow.Flow
 
 interface PlacesProvider {
-    suspend fun getPlaces(query: String): Flow<NetworkResponse<List<PlaceResult>>>
+    suspend fun getPlaces(query: String): NetworkResponse<List<PlaceResult>>
 }

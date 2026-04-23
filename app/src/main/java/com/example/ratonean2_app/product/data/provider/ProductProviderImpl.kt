@@ -18,6 +18,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlin.collections.joinToString
 
@@ -121,17 +122,22 @@ class ProductProviderImpl(private val client: HttpClient) : ProductProvider {
         }
     }
 
-    override fun getProductsBySearchInBranches(branchIds: List<String>, query: String): Flow<NetworkResponse<List<Product>>> = flow {
-        emit(NetworkResponse.Loading())
-        try {
+    override fun getProductsBySearchInBranches(
+        branchIds: List<String>,
+        query: String
+    ): Flow<NetworkResponse<List<Product>>> =
+        flow {
+            emit(NetworkResponse.Loading())
             val idsParam = branchIds.joinToString(",")
-            val url = ApiUrls.PRODUCTS_BY_SEARCH_IN_BRANCHES.appendParams(mapOf("branchIds" to idsParam, "q" to query))
+            val url = ApiUrls.PRODUCTS_BY_SEARCH_IN_BRANCHES.appendParams(
+                mapOf("branchIds" to idsParam, "q" to query)
+            )
             val products: List<Product> = client.get(url).body()
             emit(NetworkResponse.Success(products))
-        } catch (e: Exception) {
+        }.catch { e ->
+            if (e is kotlinx.coroutines.CancellationException) throw e
             emit(NetworkResponse.Failure(e.message))
         }
-    }
 
     override fun getPopularProducts(
         branchId: List<String>,

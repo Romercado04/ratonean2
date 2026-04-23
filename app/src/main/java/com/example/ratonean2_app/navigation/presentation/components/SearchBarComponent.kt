@@ -72,11 +72,53 @@ fun SearchBarHeader(
                     is SearchStatus.Loading -> Text("Buscando...", modifier = Modifier.padding(16.dp))
                     is SearchStatus.Error -> Text("Error: ${status.message}", modifier = Modifier.padding(16.dp))
                     else -> {
-                        if (uiState.searchPlaces.isNotEmpty()) {
-                            LazyColumn {
+                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+
+                            // 1. SECCIÓN SUCURSALES (Prioridad 1)
+                            if (uiState.filteredBranches.isNotEmpty()) {
+                                item { Text("Sucursales", modifier = Modifier.padding(16.dp, 8.dp))}
+                                items(uiState.filteredBranches) { branch ->
+                                    Text(
+                                        text = "📍 ${branch.name}",
+                                        modifier = Modifier
+                                            .padding(12.dp)
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                mapViewModel.onIntent(MapIntent.UpdateLocation(
+                                                    branch.latitude,
+                                                    branch.longitude,
+                                                    branch.name
+                                                ))
+                                                onActiveChange(false)
+                                            }
+                                    )
+                                }
+                            }
+
+                            // 2. SECCIÓN PRODUCTOS (Prioridad 2)
+                            if (uiState.searchProducts.isNotEmpty()) {
+                                item { Text("Productos", modifier = Modifier.padding(16.dp, 8.dp)) }
+                                items(uiState.searchProducts) { product ->
+                                    Text(
+                                        text = "🛒 ${product.description} - ${product.brand}",
+                                        modifier = Modifier
+                                            .padding(12.dp)
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                // Acá podrías navegar al detalle del producto o centrar
+                                                // el mapa en las sucursales que lo tienen
+                                                onActiveChange(false)
+                                            }
+                                    )
+                                }
+                            }
+
+                            // 3. SECCIÓN LUGARES (Prioridad 3 - Solo si no hay lo anterior o como sugerencia)
+                            if (uiState.searchPlaces.isNotEmpty()) {
+                                item { Text("Lugares", modifier = Modifier.padding(16.dp, 8.dp)) }
                                 items(uiState.searchPlaces) { place ->
                                     Text(
-                                        text = place.displayName,
+                                        text = "🚩 ${place.displayName}",
                                         modifier = Modifier
                                             .padding(12.dp)
                                             .fillMaxWidth()
@@ -92,8 +134,17 @@ fun SearchBarHeader(
                                     )
                                 }
                             }
-                        } else if (uiState.searchProducts.isEmpty() && query.isNotEmpty() && status is SearchStatus.Success) {
-                            Text("No se encontraron resultados", modifier = Modifier.padding(16.dp))
+
+                            // 4. ESTADO VACÍO
+                            if (uiState.filteredBranches.isEmpty() &&
+                                uiState.searchProducts.isEmpty() &&
+                                uiState.searchPlaces.isEmpty() &&
+                                query.isNotEmpty()
+                            ) {
+                                item {
+                                    Text("No se encontraron resultados", modifier = Modifier.padding(16.dp))
+                                }
+                            }
                         }
                     }
                 }

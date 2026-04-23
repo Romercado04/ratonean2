@@ -14,10 +14,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 
 class PlacesProviderImpl(private val client: HttpClient) : PlacesProvider {
-    override suspend fun getPlaces(query: String): Flow<NetworkResponse<List<PlaceResult>>> =
-        flow {
-            emit(NetworkResponse.Loading())
-
+    override suspend fun getPlaces(query: String): NetworkResponse<List<PlaceResult>> {
+        return try {
             val response = client.get(ApiUrls.PLACES_URL) {
                 parameter("q", query)
                 parameter("format", "json")
@@ -27,12 +25,13 @@ class PlacesProviderImpl(private val client: HttpClient) : PlacesProvider {
             }
 
             if (response.status.isSuccess()) {
-                val places = response.body<List<PlaceResult>>()
-                emit(NetworkResponse.Success(places))
+                NetworkResponse.Success(response.body<List<PlaceResult>>())
             } else {
-                emit(NetworkResponse.Failure("Error: ${response.status.value}"))
+                NetworkResponse.Failure("Error: ${response.status.value}")
             }
-        }.catch { e ->
-            emit(NetworkResponse.Failure(e.message ?: "Unknown error"))
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            NetworkResponse.Failure(e.message ?: "Unknown error")
         }
+    }
 }
