@@ -1,12 +1,14 @@
-package com.example.ratonean2_app.branch.domain.model
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.Stable
-import com.example.ratonean2_app.branch.data.entity.BranchEntity
+package com.example.ratonean2_app.branch.data.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import com.example.ratonean2_app.branch.domain.model.Branch
 import kotlinx.serialization.Serializable
 
+@Entity(tableName = "branches")
 @Serializable
-data class Branch(
-    val branchId: String,
+data class BranchEntity(
+    @PrimaryKey val branchId: String,
     val commerceId: String,
     val flagId: String,
     val name: String,
@@ -28,8 +30,9 @@ data class Branch(
     val saturdaySchedule: String?,
     val sundaySchedule: String?
 )
-fun Branch.toEntity(): BranchEntity =
-    BranchEntity(
+
+fun BranchEntity.toDomain(): Branch =
+    Branch(
         branchId = branchId,
         commerceId = commerceId,
         flagId = flagId,
@@ -52,29 +55,3 @@ fun Branch.toEntity(): BranchEntity =
         saturdaySchedule = saturdaySchedule,
         sundaySchedule = sundaySchedule
     )
-
-//[
-//  {
-//    "commerceId": "string",
-//    "flagId": "string",
-//    "branchId": "string",
-//    "name": "string",
-//    "type": "string",
-//    "street": "string",
-//    "number": "string",
-//    "latitude": 0,
-//    "longitude": 0,
-//    "observations": "string",
-//    "neighborhood": "string",
-//    "postalCode": "string",
-//    "location": "string",
-//    "province": "string",
-//    "mondaySchedule": "string",
-//    "tuesdaySchedule": "string",
-//    "wednesdaySchedule": "string",
-//    "thursdaySchedule": "string",
-//    "fridaySchedule": "string",
-//    "saturdaySchedule": "string",
-//    "sundaySchedule": "string"
-//  }
-//]

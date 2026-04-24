@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.jetbrainsKotlinSerialization)
-
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -74,6 +74,10 @@ dependencies {
     implementation(libs.maplibre.android)
     implementation(libs.maplibre.compose)
     implementation("org.maplibre.gl:android-plugin-annotation-v9:3.0.2")
+
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     // Using bundles to clean up redundant lines
     implementation(libs.bundles.ktor.client)

@@ -1,7 +1,8 @@
 package com.example.ratonean2_app.product.domain.usecase
 
-import com.example.ratonean2_app.product.domain.provider.ProductProvider
+import com.example.ratonean2_app.product.domain.repository.ProductRepository
 
-class GetPopularProductsUseCase(private val productProvider: ProductProvider) {
-    operator fun invoke(branchId: List<String>, limit: Int? = null) = productProvider.getPopularProducts(branchId, limit)
+class GetPopularProductsUseCase(private val repository: ProductRepository) {
+    operator fun invoke(branchIds: List<String>, limit: Int? = null) =
+        repository.getPopularProducts(branchIds, limit)
 }

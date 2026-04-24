@@ -92,22 +92,14 @@ class MapViewModel(
             val newLocation = LocationModel(name, lat, lon)
             _state.update { it.copy(location = newLocation, mapStatus = MapStatus.Loading) }
 
-            getNearbyBranchesUseCase(lat, lon, distance).collect { response ->
-                when (response) {
-                    is NetworkResponse.Loading -> {
-                        _state.update { it.copy(mapStatus = MapStatus.Loading) }
-                    }
-                    is NetworkResponse.Success -> {
-                        val branches = response.data.orEmpty()
-                        _state.update { it.copy(branches = branches, mapStatus = MapStatus.Success) }
-                        if (branches.isNotEmpty()) {
-                            loadPopularProducts(branches.map { it.branchId })
-                        }
-                    }
-                    is NetworkResponse.Failure -> {
-                        _state.update { it.copy(branches = emptyList(), mapStatus = MapStatus.Success) }
-                        Log.e("MapViewModel", "Error cargando sucursales")
-                    }
+            getNearbyBranchesUseCase(lat, lon, distance).collect { branches ->
+                _state.update { it.copy(
+                    branches = branches,
+                    mapStatus = MapStatus.Success
+                ) }
+
+                if (branches.isNotEmpty()) {
+                    loadPopularProducts(branches.map { it.branchId })
                 }
             }
         }
@@ -115,12 +107,8 @@ class MapViewModel(
 
     private fun loadPopularProducts(branchIds: List<String>) {
         viewModelScope.launch {
-            getPopularProductsUseCase(branchIds, 5).collect { response ->
-                if (response is NetworkResponse.Success) {
-                    val products = response.data.orEmpty()
-                    _state.update { it.copy(popularProductsCache = products) }
-                    Log.d("MapViewModel", "Populares cacheados: ${products.size}")
-                }
+            getPopularProductsUseCase(branchIds, 5).collect { products ->
+                _state.update { it.copy(popularProductsCache = products) }
             }
         }
     }
@@ -132,59 +120,39 @@ class MapViewModel(
             _state.update { it.copy(
                 searchStatus = SearchStatus.Idle,
                 searchProducts = it.popularProductsCache,
-                filteredBranches = emptyList(),
-                searchPlaces = emptyList()
+                filteredBranches = emptyList()
             ) }
             return
         }
 
         jobs.searchJob = viewModelScope.launch {
-            try {
-                delay(500)
-                _state.update { it.copy(searchStatus = SearchStatus.Loading) }
+            delay(500)
+            _state.update { it.copy(searchStatus = SearchStatus.Loading) }
 
-                val filteredBranches = _state.value.branches.filter { branch ->
-                    val branchWords = branch.name.lowercase().split(" ")
-                    val queryWords = query.lowercase().split(" ")
-                    queryWords.any { q -> branchWords.any { it.contains(q) } }
-                }
+            val filteredBranches = _state.value.branches.filter { branch ->
+                branch.name.contains(query, ignoreCase = true)
+            }
 
-                var products = _state.value.popularProductsCache.filter { product ->
-                    val text = "${product.description} ${product.brand}".lowercase()
-                    query.lowercase() in text
-                }
+            val branchIds = _state.value.branches.map { it.branchId }
 
+            getProductsBySearchInBranches(branchIds, query).collect { products ->
+                val finalProducts = products
                 var places: List<PlaceResult> = emptyList()
-                val branchIds = _state.value.branches.map { it.branchId }
 
-                if (products.isEmpty() && branchIds.isNotEmpty()) {
-                    val apiResponse = getProductsBySearchInBranches(branchIds, query)
-                        .first { it !is NetworkResponse.Loading }
-
-                    if (apiResponse is NetworkResponse.Success) {
-                        products = apiResponse.data.orEmpty()
-                    }
-                }
-
-                if (products.isEmpty()) {
+                // Si no hay productos, buscamos lugares (Google Places)
+                if (finalProducts.isEmpty()) {
                     places = fetchPlaces(query)
                 }
 
                 _state.update {
                     it.copy(
                         filteredBranches = filteredBranches,
-                        searchProducts = products,
+                        searchProducts = finalProducts,
                         searchPlaces = places,
-                        searchStatus = if (products.isEmpty() && places.isEmpty() && filteredBranches.isEmpty())
+                        searchStatus = if (finalProducts.isEmpty() && places.isEmpty() && filteredBranches.isEmpty())
                             SearchStatus.Empty else SearchStatus.Success
                     )
                 }
-
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e("MapViewModel", "Error en search(): ${e.message}")
-                _state.update { it.copy(searchStatus = SearchStatus.Error(e.message ?: "Error desconocido")) }
             }
         }
     }

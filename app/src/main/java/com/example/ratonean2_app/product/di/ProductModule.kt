@@ -1,7 +1,11 @@
 package com.example.ratonean2_app.product.di
 
+import com.example.ratonean2_app.core.data.database.AppDatabase
+import com.example.ratonean2_app.product.data.local.ProductLocalDataSource
 import com.example.ratonean2_app.product.data.provider.ProductProviderImpl
+import com.example.ratonean2_app.product.data.repository.ProductRepositoryImpl
 import com.example.ratonean2_app.product.domain.provider.ProductProvider
+import com.example.ratonean2_app.product.domain.repository.ProductRepository
 import com.example.ratonean2_app.product.domain.usecase.CreateNewProductUseCase
 import com.example.ratonean2_app.product.domain.usecase.DeleteProductUseCase
 import com.example.ratonean2_app.product.domain.usecase.GetAllProductsUseCase
@@ -27,4 +31,9 @@ val productModule = module {
     factory { GetProductsWithPromosUseCase(get()) }
     factory { GetProductsBySearchInBranches(get()) }
     factory { GetPopularProductsUseCase(get()) }
+
+    single { get<AppDatabase>().productDao() }
+    single { ProductLocalDataSource(get()) }
+    single<ProductProvider> { ProductProviderImpl(get()) }
+    single<ProductRepository> { ProductRepositoryImpl(get(), get()) }
 }
