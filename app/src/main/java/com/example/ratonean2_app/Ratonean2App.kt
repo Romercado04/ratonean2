@@ -9,6 +9,7 @@ import com.example.ratonean2_app.core.di.networkModule
 import com.example.ratonean2_app.map.di.locationModule
 import com.example.ratonean2_app.places.di.placesModule
 import com.example.ratonean2_app.product.di.productModule
+import com.example.ratonean2_app.shoppinglist.di.shoppingListModule
 import com.example.ratonean2_app.user.di.userModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.GlobalContext.startKoin
@@ -29,7 +30,7 @@ class Ratonean2App : Application() {
                     branchModule,
                     placesModule,
                     databaseModule,
-
+                    shoppingListModule,
                 )
             )
         }
