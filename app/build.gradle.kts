@@ -79,6 +79,8 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    implementation(libs.androidx.datastore.preferences)
+
     // Using bundles to clean up redundant lines
     implementation(libs.bundles.ktor.client)
     implementation(libs.bundles.play.services)

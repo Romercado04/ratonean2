@@ -19,6 +19,8 @@ import com.example.ratonean2_app.places.domain.model.PlaceResult
 import com.example.ratonean2_app.places.domain.usecase.GetPlacesUseCase
 import com.example.ratonean2_app.product.domain.usecase.GetPopularProductsUseCase
 import com.example.ratonean2_app.product.domain.usecase.GetProductsBySearchInBranches
+import com.example.ratonean2_app.user.domain.usecase.GetUserPrefsLocationUseCase
+import com.example.ratonean2_app.user.domain.usecase.SaveUserPrefsLocationUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +37,9 @@ class MapViewModel(
     private val getNearbyBranchesUseCase: GetNearbyBranchesUseCase,
     private val getProductsBySearchInBranches: GetProductsBySearchInBranches,
     private val getPopularProductsUseCase: GetPopularProductsUseCase,
-    private val getPlacesUseCase: GetPlacesUseCase
+    private val getPlacesUseCase: GetPlacesUseCase,
+    private val getUserPrefsLocationUseCase: GetUserPrefsLocationUseCase,
+    private val saveUserPrefsLocationUseCase: SaveUserPrefsLocationUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MapViewState())
@@ -52,9 +56,13 @@ class MapViewModel(
     fun onIntent(intent: MapIntent) {
         when (intent) {
             is MapIntent.LoadLocation -> handleLoadLocation()
+
+            is MapIntent.OnPermissionResult -> {
+                handlePermissionResult(intent.granted)
+                handleLoadLocation()
+            }
             is MapIntent.UpdateLocation -> handleUpdateLocation(intent.lat, intent.lon, intent.name)
             is MapIntent.SearchQuery -> handleSearch(intent.query)
-            is MapIntent.OnPermissionResult -> handlePermissionResult(intent.granted)
         }
     }
 
@@ -62,26 +70,40 @@ class MapViewModel(
         viewModelScope.launch {
             _state.update { it.copy(mapStatus = MapStatus.Loading) }
             try {
-                when (val result = getUserLocationUseCase()) {
-                    is LocationResult.Success -> {
-                        onIntent(MapIntent.UpdateLocation(
-                            result.location.latitude,
-                            result.location.longitude,
-                            result.location.name
-                        ))
-                    }
-                    is LocationResult.PermissionDenied -> {
-                        _state.update { it.copy(mapStatus = MapStatus.PermissionDenied, location = null) }
-                    }
-                    is LocationResult.LocationDisabled -> {
-                        _state.update { it.copy(mapStatus = MapStatus.LocationDisabled, location = null) }
-                    }
-                    is LocationResult.Error -> {
-                        _state.update { it.copy(mapStatus = MapStatus.Error("Error obteniendo ubicación"), location = null) }
-                    }
+                val savedLocation = getUserPrefsLocationUseCase().first()
+
+                if (savedLocation != null) {
+                    handleUpdateLocation(
+                        lat = savedLocation.latitude,
+                        lon = savedLocation.longitude,
+                        name = savedLocation.addressName
+                    )
+                } else {
+                    loadFromGps()
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(mapStatus = MapStatus.Error(e.message ?: "Error desconocido al cargar mapa")) }
+                _state.update { it.copy(mapStatus = MapStatus.Error(e.message ?: "Error al cargar ubicación")) }
+            }
+        }
+    }
+
+    private suspend fun loadFromGps() {
+        when (val result = getUserLocationUseCase()) {
+            is LocationResult.Success -> {
+                handleUpdateLocation(
+                    result.location.latitude,
+                    result.location.longitude,
+                    result.location.name
+                )
+            }
+            is LocationResult.PermissionDenied -> {
+                _state.update { it.copy(mapStatus = MapStatus.PermissionDenied, location = null) }
+            }
+            is LocationResult.LocationDisabled -> {
+                _state.update { it.copy(mapStatus = MapStatus.LocationDisabled, location = null) }
+            }
+            is LocationResult.Error -> {
+                _state.update { it.copy(mapStatus = MapStatus.Error("Error de GPS"), location = null) }
             }
         }
     }
@@ -89,6 +111,16 @@ class MapViewModel(
     private fun handleUpdateLocation(lat: Double, lon: Double, name: String?, distance: Double = 5.0) {
         jobs.updateJob?.cancel()
         jobs.updateJob = viewModelScope.launch {
+
+            saveUserPrefsLocationUseCase(
+                com.example.ratonean2_app.user.domain.model.UserLocation(
+                    latitude = lat,
+                    longitude = lon,
+                    addressName = name,
+                    isGpsBased = false
+                )
+            )
+
             val newLocation = LocationModel(name, lat, lon)
             _state.update { it.copy(location = newLocation, mapStatus = MapStatus.Loading) }
 

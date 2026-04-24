@@ -24,67 +24,41 @@ fun MapScreen(
     uiState: MapViewState,
     onIntent: (MapIntent) -> Unit
 ) {
-
     val locationPermissionState = rememberPermissionState(
         android.Manifest.permission.ACCESS_FINE_LOCATION
     )
 
-    LaunchedEffect(locationPermissionState.status.isGranted) {
+    LaunchedEffect(Unit) {
         onIntent(MapIntent.OnPermissionResult(locationPermissionState.status.isGranted))
     }
 
-    LaunchedEffect(uiState.permissionState) {
-        if (uiState.permissionState == LocationPermissionState.Granted) {
-            onIntent(MapIntent.LoadLocation)
-        }
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
-        when (uiState.permissionState) {
-            LocationPermissionState.Granted -> {
-                when (val status = uiState.mapStatus) {
-                    is MapStatus.Loading -> {
-                        CenteredText("Cargando mapa...")
+        if (uiState.location != null && uiState.mapStatus is MapStatus.Success) {
+            MapLibreView(
+                lat = uiState.location.latitude,
+                lon = uiState.location.longitude,
+                branches = uiState.branches
+            )
+        } else {
+            when (uiState.permissionState) {
+                LocationPermissionState.NotAsked -> {
+                    LaunchedEffect(Unit) {
+                        locationPermissionState.launchPermissionRequest()
                     }
-                    is MapStatus.Success -> {
-                        uiState.location?.let { loc ->
-                            MapLibreView(
-                                lat = loc.latitude,
-                                lon = loc.longitude,
-                                branches = uiState.branches
-                            )
+                    CenteredText("Solicitando ubicación...")
+                }
+
+                else -> {
+                    when (val status = uiState.mapStatus) {
+                        is MapStatus.Loading -> CenteredText("Buscando tu zona...")
+                        is MapStatus.Error -> CenteredText("Error: ${status.message}")
+                        is MapStatus.PermissionDenied -> {
+                            CenteredText("Sin permiso de GPS. Por favor, usá el buscador para elegir tu zona.")
                         }
-                    }
-                    is MapStatus.Error -> {
-                        CenteredText("Error: ${status.message}")
-                    }
-                    is MapStatus.PermissionDenied, MapStatus.LocationDisabled -> {
-                        CenteredText("El GPS está desactivado o sin permisos.")
+                        else -> {}
                     }
                 }
-            }
-
-            LocationPermissionState.Denied -> {
-                if (uiState.location != null) {
-                    MapLibreView(
-                        lat = uiState.location!!.latitude,
-                        lon = uiState.location!!.longitude,
-                        branches = uiState.branches
-                    )
-                } else {
-                    CenteredText("Permiso denegado. No podemos mostrar tu ubicación actual.")
-                }
-            }
-
-            LocationPermissionState.NotAsked -> {
-                // Lanzamos la solicitud de permiso
-                LaunchedEffect(Unit) {
-                    locationPermissionState.launchPermissionRequest()
-                }
-                CenteredText("Solicitando permiso de ubicación...")
             }
         }
     }
 }
-
-
