@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DrawerState
+import androidx.compose.material3.MaterialTheme
 import com.example.ratonean2_app.map.presentation.state.MapIntent
 import com.example.ratonean2_app.map.presentation.state.MapViewState
 import com.example.ratonean2_app.map.presentation.state.SearchStatus
@@ -36,7 +37,7 @@ fun SearchBarHeader(
     onClearClick: () -> Unit,
     drawerState: DrawerState,
     onIntent: (MapIntent) -> Unit,
-    uiState: MapViewState, // Usamos el estado unificado aquí
+    uiState: MapViewState,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -49,10 +50,13 @@ fun SearchBarHeader(
                     onQueryChange(it)
                     onIntent(MapIntent.SearchQuery(it))
                 },
-                onSearch = { onIntent(MapIntent.SearchQuery(query)) },
+                onSearch = {
+                    onIntent(MapIntent.SearchQuery(query))
+                    onActiveChange(false)
+                },
                 expanded = active,
                 onExpandedChange = onActiveChange,
-                placeholder = { Text("Buscar...") },
+                placeholder = { Text("Buscar sucursales, productos...") },
                 leadingIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menú")
@@ -69,19 +73,28 @@ fun SearchBarHeader(
         content = {
             if (active) {
                 when (val status = uiState.searchStatus) {
-                    is SearchStatus.Loading -> Text("Buscando...", modifier = Modifier.padding(16.dp))
-                    is SearchStatus.Error -> Text("Error: ${status.message}", modifier = Modifier.padding(16.dp))
+                    is SearchStatus.Loading -> {
+                        Text("Buscando...", modifier = Modifier.padding(16.dp))
+                    }
+                    is SearchStatus.Error -> {
+                        Text("Error: ${status.message}", modifier = Modifier.padding(16.dp))
+                    }
                     else -> {
                         LazyColumn(modifier = Modifier.fillMaxWidth()) {
 
-                            // 1. SECCIÓN SUCURSALES (Prioridad 1)
+                            // 1. SECCIÓN SUCURSALES
                             if (uiState.filteredBranches.isNotEmpty()) {
-                                item { Text("Sucursales", modifier = Modifier.padding(16.dp, 8.dp))}
+                                item {
+                                    Text("Sucursales",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        modifier = Modifier.padding(16.dp, 8.dp)
+                                    )
+                                }
                                 items(uiState.filteredBranches) { branch ->
                                     Text(
                                         text = "📍 ${branch.name}",
                                         modifier = Modifier
-                                            .padding(12.dp)
+                                            .padding(horizontal = 12.dp, vertical = 8.dp)
                                             .fillMaxWidth()
                                             .clickable {
                                                 onIntent(MapIntent.UpdateLocation(
@@ -95,30 +108,41 @@ fun SearchBarHeader(
                                 }
                             }
 
-                            // 2. SECCIÓN PRODUCTOS (Prioridad 2)
+                            // 2. SECCIÓN PRODUCTOS
                             if (uiState.searchProducts.isNotEmpty()) {
-                                item { Text("Productos", modifier = Modifier.padding(16.dp, 8.dp)) }
+                                item {
+                                    Text("Productos",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        modifier = Modifier.padding(16.dp, 8.dp)
+                                    )
+                                }
                                 items(uiState.searchProducts) { product ->
                                     Text(
                                         text = "🛒 ${product.description} - ${product.brand}",
                                         modifier = Modifier
-                                            .padding(12.dp)
+                                            .padding(horizontal = 12.dp, vertical = 8.dp)
                                             .fillMaxWidth()
                                             .clickable {
+                                                // TODO: Mandar intent para filtrar por este producto específico si es necesario
                                                 onActiveChange(false)
                                             }
                                     )
                                 }
                             }
 
-                            // 3. SECCIÓN LUGARES (Prioridad 3 - Solo si no hay lo anterior o como sugerencia)
+                            // 3. SECCIÓN LUGARES
                             if (uiState.searchPlaces.isNotEmpty()) {
-                                item { Text("Lugares", modifier = Modifier.padding(16.dp, 8.dp)) }
+                                item {
+                                    Text("Lugares",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        modifier = Modifier.padding(16.dp, 8.dp)
+                                    )
+                                }
                                 items(uiState.searchPlaces) { place ->
                                     Text(
                                         text = "🚩 ${place.displayName}",
                                         modifier = Modifier
-                                            .padding(12.dp)
+                                            .padding(horizontal = 12.dp, vertical = 8.dp)
                                             .fillMaxWidth()
                                             .clickable {
                                                 onIntent(MapIntent.UpdateLocation(
@@ -140,7 +164,8 @@ fun SearchBarHeader(
                                 query.isNotEmpty()
                             ) {
                                 item {
-                                    Text("No se encontraron resultados", modifier = Modifier.padding(16.dp))
+                                    Text("No se encontraron resultados para '$query'",
+                                        modifier = Modifier.padding(16.dp))
                                 }
                             }
                         }

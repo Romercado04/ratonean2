@@ -10,12 +10,15 @@ import com.example.ratonean2_app.shoppinglist.domain.usecases.GetItemsFromListUs
 import com.example.ratonean2_app.shoppinglist.domain.usecases.ManageShoppingItemUseCase
 import com.example.ratonean2_app.shoppinglist.domain.usecases.ManageShoppingListUseCase
 import com.example.ratonean2_app.shoppinglist.domain.usecases.SetActiveListUseCase
+import com.example.ratonean2_app.shoppinglist.presentation.ShoppingListViewModel
+import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val shoppingListModule = module {
     single { get<AppDatabase>().shoppingListDao() }
     single { ShoppingListLocalDataSource(get()) }
     single<ShoppingListRepository> { ShoppingListRepositoryImpl(get()) }
+    viewModel { ShoppingListViewModel(get(), get(), get(), get(), get()) }
 
     factory { GetAllShoppingListsUseCase(get()) }
     factory { GetItemsFromListUseCase(get()) }

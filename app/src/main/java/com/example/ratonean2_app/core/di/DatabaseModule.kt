@@ -11,7 +11,9 @@ val databaseModule = module {
             get(),
             AppDatabase::class.java,
             "ratonean_db"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     single { get<AppDatabase>().commerceDao() }

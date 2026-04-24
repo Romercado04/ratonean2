@@ -39,10 +39,11 @@ import androidx.compose.ui.unit.dp
 import com.example.ratonean2_app.shoppinglist.presentation.components.ListSelectorContent
 import com.example.ratonean2_app.shoppinglist.presentation.components.ShoppingItemRow
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShoppingListScreen(viewModel: ShoppingListViewModel) {
+fun ShoppingListScreen(viewModel: ShoppingListViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsState()
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()

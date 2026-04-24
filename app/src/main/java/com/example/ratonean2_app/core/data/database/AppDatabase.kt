@@ -20,7 +20,7 @@ import com.example.ratonean2_app.shoppinglist.data.local.ShoppingListEntity
         ShoppingListEntity::class,
         ShoppingItemEntity::class
     ],
-    version = 1
+    version = 2
 )
 abstract class AppDatabase : RoomDatabase() {
 

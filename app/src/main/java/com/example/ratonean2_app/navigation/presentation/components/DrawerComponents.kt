@@ -5,41 +5,53 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.ratonean2_app.navigation.presentation.Screen
+
 
 @Composable
 fun DrawerContent(onDestinationClicked: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .width(280.dp) // ancho fijo recomendado
-            .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
+            .width(280.dp)
+            .background(MaterialTheme.colorScheme.surface) // Usamos surface para que destaque
+            .padding(24.dp)
+            .statusBarsPadding()
     ) {
-        Text("Menú", style = MaterialTheme.typography.titleLarge)
+        Text(
+            text = "Ratonean2",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary
+        )
+
         Spacer(modifier = Modifier.height(24.dp))
-        DrawerItem("Home", onDestinationClicked)
-        DrawerItem("Profile", onDestinationClicked)
-        DrawerItem("Settings", onDestinationClicked)
+        HorizontalDivider(modifier = Modifier.padding(bottom = 16.dp))
+
+        DrawerItem("Inicio", Screen.Home.route, onDestinationClicked)
+        DrawerItem("Mi Perfil", Screen.Profile.route, onDestinationClicked)
+        DrawerItem("Lista de Compras", Screen.ShoppingList.route, onDestinationClicked)
     }
 }
+
 @Composable
-fun DrawerItem(title: String, onClick: (String) -> Unit) {
+fun DrawerItem(label: String, route: String, onClick: (String) -> Unit) {
     Text(
-        text = title,
+        text = label,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .clickable { onClick(title.lowercase()) },
-        style = MaterialTheme.typography.bodyLarge
+            .clickable { onClick(route) } // Mandamos la ruta real (ej: "shopping_list")
+            .padding(vertical = 12.dp, horizontal = 8.dp),
+        style = MaterialTheme.typography.titleMedium
     )
 }
